@@ -134,129 +134,90 @@
 
     <section class="rpg-panel" id="rpgPanel" hidden aria-labelledby="rpgPanelTitle">
       <div class="rpg-head">
-        <div class="rpg-title-group">
-          <h2 id="rpgPanelTitle">RPG lab</h2>
-          <p class="rpg-subtitle">Ipotesi di lavoro: soglie morbide, non Vanilla né TZonyne. Il modello resta Java/script.</p>
+        <h2 id="rpgPanelTitle">RPG lab</h2>
+        <p class="rpg-subtitle">Ipotesi di lavoro · Java/script, non Vanilla</p>
+        <span class="rpg-flag">Non mod</span>
+        <p class="rpg-status" id="rpgStatus" role="status">Compila, poi calibra.</p>
+        <div class="rpg-toolbar" role="group" aria-label="Azioni del laboratorio">
+          <button type="button" class="chip rpg-btn" id="rpgProposal" title="Progressione geometrica tra base e tetto; forza 0.85× → 1.10×">Geometrica</button>
+          <button type="button" class="chip rpg-btn" id="rpgLinear" title="Torna alla formula originale del motore">Originali</button>
+          <button type="button" class="chip rpg-btn rpg-btn--accent" id="rpgCalibrate" title="Moltiplicatore danno minimo per centrare i colpi d’ingresso">Calibra</button>
+          <button type="button" class="chip rpg-btn" id="rpgExport" title="Scarica obiettivi, curve e parametri">JSON</button>
         </div>
-        <span class="rpg-flag">Non Vanilla · non mod</span>
       </div>
 
-      <p class="rpg-status" id="rpgStatus" role="status">Compila le build d’ingresso, poi calibra.</p>
-
-      <div class="rpg-toolbar" role="group" aria-label="Azioni del laboratorio">
-        <button type="button" class="chip rpg-btn" id="rpgProposal" title="Progressione geometrica tra base e tetto; forza 0.85× → 1.10×">Curva geometrica</button>
-        <button type="button" class="chip rpg-btn" id="rpgLinear" title="Torna alla formula originale del motore">Curve originali</button>
-        <button type="button" class="chip rpg-btn rpg-btn--accent" id="rpgCalibrate" title="Moltiplicatore danno minimo per centrare i colpi d’ingresso">Calibra tier</button>
-        <button type="button" class="chip rpg-btn" id="rpgExport" title="Scarica obiettivi, curve e parametri">Esporta JSON</button>
+      <div class="rpg-controls">
+        <div class="rpg-field">
+          <label for="rpgEntryHtk">Ingresso</label>
+          <input class="rpg-num" type="number" id="rpgEntryHtk" value="3" min="1" max="10" step="0.5" inputmode="decimal" title="Colpi ammessi in ingresso, corpo fresco">
+        </div>
+        <div class="rpg-field">
+          <label for="rpgBlockedHtk">Muro</label>
+          <input class="rpg-num" type="number" id="rpgBlockedHtk" value="8" min="2" max="100" step="1" inputmode="numeric" title="Colpi minimi della build precedente">
+        </div>
+        <label class="rpg-check" for="rpgCurveEnabled">
+          <input type="checkbox" id="rpgCurveEnabled">
+          <span>Curve</span>
+        </label>
+        <div class="rpg-field">
+          <label for="rpgBase">Base</label>
+          <input class="rpg-num rpg-num--wide" type="number" id="rpgBase" value="0.3" min="0.001" max="5" step="0.001" inputmode="decimal" title="Base geometrica Lv 0">
+        </div>
+        <div class="rpg-field">
+          <label for="rpgCap">Tetto</label>
+          <input class="rpg-num rpg-num--wide" type="number" id="rpgCap" value="72.9" min="0.001" max="10000" step="0.001" inputmode="decimal" title="Tetto geometrico Lv 10">
+        </div>
+        <div class="rpg-field">
+          <label for="rpgGlobal">Glob</label>
+          <input class="rpg-num rpg-num--wide" type="number" id="rpgGlobal" value="0.15" min="0.001" max="2" step="0.001" inputmode="decimal" title="Fattore globale mischia">
+        </div>
+        <div class="rpg-field">
+          <label for="rpgBaseDamage">Lin</label>
+          <input class="rpg-num rpg-num--wide" type="number" id="rpgBaseDamage" value="0.3" min="0.001" max="5" step="0.001" inputmode="decimal" title="Base curva lineare (curve off)">
+        </div>
       </div>
 
       <div class="rpg-grid">
-        <section class="rpg-card" aria-labelledby="rpgGoalsTitle">
-          <div class="rpg-card-head">
-            <h3 id="rpgGoalsTitle">Build d’ingresso</h3>
-          </div>
+        <table class="dense-table rpg-table rpg-table--goals" id="rpgGoalsTable" aria-label="Build d’ingresso per tier">
+          <thead>
+            <tr>
+              <th scope="col">T</th>
+              <th scope="col">Abil</th>
+              <th scope="col">Forza</th>
+            </tr>
+          </thead>
+          <tbody id="rpgGoals"></tbody>
+        </table>
 
-          <div class="rpg-targets">
-            <div class="rpg-field">
-              <label for="rpgEntryHtk">Colpi ingresso</label>
-              <input type="number" id="rpgEntryHtk" value="3" min="1" max="10" step="0.5" inputmode="decimal" title="Corpo fresco. 3 = ingresso ok">
-            </div>
-            <div class="rpg-field">
-              <label for="rpgBlockedHtk">Muro sotto livello</label>
-              <input type="number" id="rpgBlockedHtk" value="8" min="2" max="100" step="1" inputmode="numeric" title="Colpi minimi della build precedente">
-            </div>
-          </div>
+        <table class="dense-table rpg-table rpg-table--curve" id="rpgCurveTable" aria-label="Curve danno per livello">
+          <thead>
+            <tr>
+              <th scope="col">Lv</th>
+              <th scope="col">Arma ×</th>
+              <th scope="col">Forza ×</th>
+            </tr>
+          </thead>
+          <tbody id="rpgCurve"></tbody>
+        </table>
 
-          <div class="table-scroll rpg-scroll">
-            <table class="dense-table rpg-table" id="rpgGoalsTable" aria-label="Build d’ingresso per tier: abilità e forza">
-              <thead>
-                <tr>
-                  <th scope="col">Tier</th>
-                  <th scope="col">Abilità</th>
-                  <th scope="col">Forza</th>
-                </tr>
-              </thead>
-              <tbody id="rpgGoals"></tbody>
-            </table>
-          </div>
-
-          <p class="rpg-hint">Obiettivi di progetto. Abilità 0 / forza 10 non deve sbloccare il tier successivo.</p>
-        </section>
-
-        <section class="rpg-card" aria-labelledby="rpgCurveTitle">
-          <div class="rpg-card-head">
-            <div class="rpg-card-head-row">
-              <h3 id="rpgCurveTitle">Curve danno personalizzate</h3>
-              <label class="rpg-check" for="rpgCurveEnabled">
-                <input type="checkbox" id="rpgCurveEnabled">
-                <span>Curve attive</span>
-              </label>
-            </div>
-            <p class="rpg-card-sub">Spento = formula originale del motore.</p>
-          </div>
-
-          <div class="table-scroll rpg-scroll rpg-scroll--curve">
-            <table class="dense-table rpg-table" id="rpgCurveTable" aria-label="Curve danno per livello abilità e forza">
-              <thead>
-                <tr>
-                  <th scope="col">Lv</th>
-                  <th scope="col">Arma ×</th>
-                  <th scope="col">Forza ×</th>
-                </tr>
-              </thead>
-              <tbody id="rpgCurve"></tbody>
-            </table>
-          </div>
-
-          <div class="rpg-settings">
-            <div class="rpg-field">
-              <label for="rpgBase">Base geometrica (Lv 0)</label>
-              <input type="number" id="rpgBase" value="0.3" min="0.001" max="5" step="0.001" inputmode="decimal">
-            </div>
-            <div class="rpg-field">
-              <label for="rpgCap">Tetto geometrico (Lv 10)</label>
-              <input type="number" id="rpgCap" value="72.9" min="0.001" max="10000" step="0.001" inputmode="decimal">
-            </div>
-            <div class="rpg-field">
-              <label for="rpgGlobal">Fattore globale mischia</label>
-              <input type="number" id="rpgGlobal" value="0.15" min="0.001" max="2" step="0.001" inputmode="decimal">
-            </div>
-            <div class="rpg-field">
-              <label for="rpgBaseDamage">Base curva lineare</label>
-              <input type="number" id="rpgBaseDamage" value="0.3" min="0.001" max="5" step="0.001" inputmode="decimal">
-            </div>
-          </div>
-
-          <p class="rpg-hint">Globale scala la mischia. Curve off non resetta i moltiplicatori: ricalibra o Reset TZonyne.</p>
-        </section>
-      </div>
-
-      <section class="rpg-card rpg-card--audit" aria-labelledby="rpgAuditTitle">
-        <div class="rpg-card-head">
-          <h3 id="rpgAuditTitle">Audit delle soglie per tier</h3>
-          <p class="rpg-card-sub">Corpo fresco, arma selezionata. Calibra muove solo il danno del tier. Fucili/stomp esclusi.</p>
-        </div>
-
-        <div class="table-scroll rpg-scroll">
-          <table class="dense-table rpg-table rpg-table--audit" id="rpgAuditTable" aria-label="Audit delle soglie di colpi per tier">
+        <div class="rpg-audit-wrap">
+          <table class="dense-table rpg-table rpg-table--audit" id="rpgAuditTable" aria-label="Audit soglie per tier">
             <thead>
               <tr>
-                <th scope="col">Tier</th>
-                <th scope="col">Build ingresso</th>
-                <th scope="col">Colpi ingresso</th>
-                <th scope="col">Colpi precedente</th>
-                <th scope="col">Primo Lv</th>
-                <th scope="col" title="HTK della build abilità 0, forza 10">Arma0 Forza10</th>
-                <th scope="col" title="HTK testa e terra della build precedente">Testa/terra prec.</th>
+                <th scope="col">T</th>
+                <th scope="col">Build</th>
+                <th scope="col">In</th>
+                <th scope="col">Prec</th>
+                <th scope="col">1°Lv</th>
+                <th scope="col" title="HTK abilità 0, forza 10">A0 F10</th>
+                <th scope="col" title="HTK testa e terra della build precedente">T/terra</th>
                 <th scope="col">Esito</th>
               </tr>
             </thead>
             <tbody id="rpgAudit"></tbody>
           </table>
         </div>
-
-        <p class="rpg-hint">Ingresso ≤ soglia · muro = precedente ≥ sotto-livello · Primo Lv = livello minimo all’ingresso.</p>
-      </section>
+      </div>
 
       <p class="rpg-notes-dynamic" id="rpgNotes">Diagnostica curve e scalini.</p>
     </section>

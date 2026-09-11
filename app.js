@@ -1964,7 +1964,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderRpgLab() {
     const enabled = !!state.config.WEAPON_LEVEL_DAMAGE_CURVE;
     document.getElementById("rpgCurveEnabled").checked = enabled;
-    document.getElementById("rpgLaunch").textContent = enabled ? "Laboratorio RPG · curva attiva" : "Laboratorio RPG";
+    document.getElementById("rpgLaunch").textContent = enabled ? "RPG · curva" : "RPG";
     if (document.getElementById("rpgPanel").hidden) return;
     document.getElementById("rpgGlobal").value = state.config.GLOBAL_MELEE_DAMAGE_REDUCTION_MULTIPLIER;
     document.getElementById("rpgBaseDamage").value = state.config.BASE_WEAPON_DAMAGE_MULTIPLIER;
@@ -1973,7 +1973,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!curveBody.children.length) curveBody.innerHTML = Array.from({ length: 11 }, (_, level) => {
       const weapon = enabled ? state.config.WEAPON_LEVEL_DAMAGE_CURVE[level] : CombatEngine.getWeaponLevelDamageModifier(level, state.config);
       const strength = enabled ? state.config.STRENGTH_DAMAGE_CURVE[level] : CombatEngine.getStrengthMod(level);
-      return `<tr><th scope="row">${level}</th><td><input aria-label="Moltiplicatore arma livello ${level}" data-curve="weaponCurve" data-level="${level}" type="number" min="0.000001" max="10000" step="any" value="${Number(weapon.toPrecision(7))}"></td><td><input aria-label="Moltiplicatore forza livello ${level}" data-curve="strengthCurve" data-level="${level}" type="number" min="0.000001" max="100" step="any" value="${Number(strength.toPrecision(7))}"></td></tr>`;
+      return `<tr><th scope="row">${level}</th><td><input class="rpg-num rpg-num--wide" aria-label="Moltiplicatore arma livello ${level}" data-curve="weaponCurve" data-level="${level}" type="number" min="0.000001" max="10000" step="any" value="${Number(weapon.toPrecision(7))}"></td><td><input class="rpg-num rpg-num--wide" aria-label="Moltiplicatore forza livello ${level}" data-curve="strengthCurve" data-level="${level}" type="number" min="0.000001" max="100" step="any" value="${Number(strength.toPrecision(7))}"></td></tr>`;
     }).join("");
     curveBody.querySelectorAll("input").forEach(input => {
       if (input === document.activeElement) return;
@@ -1991,21 +1991,21 @@ document.addEventListener("DOMContentLoaded", () => {
       const goal = rpg.goals[index];
       const tacticalBypass = index > 0 && [row.floorPreviousHtk, row.headPreviousHtk].some(value => value !== null && value < rpg.blockedHtk);
       const partialAccess = index > 0 && [row.strengthBehindHtk, row.skillBehindHtk].some(value => value !== null && value <= rpg.entryHtk);
-      const status = !row.entryOk ? "Entrata troppo dura" : !row.wallOk ? "Scalino insufficiente" : partialAccess ? "Accesso con build incompleta" : tacticalBypass ? "Corpo OK · bypass tattico" : "Obiettivi verificati*";
-      return `<tr><th scope="row">T${row.tierId}</th><td><button class="chip" data-rpg-inspect="${index}">A${goal.skill} / F${goal.strength}</button></td><td>${formatZone(row.entryHtk)}</td><td>${row.previousHtk === null ? "—" : formatZone(row.previousHtk)}</td><td>${row.firstSkill === null ? "Mai" : row.firstSkill}</td><td>${row.strengthBehindHtk === null ? "—" : formatZone(row.strengthBehindHtk)}</td><td>${row.skillBehindHtk === null ? "—" : formatZone(row.skillBehindHtk)}</td><td>${index === 0 ? "—" : `${formatZone(row.headPreviousHtk)} / ${row.floorPreviousHtk === null ? "—" : formatZone(row.floorPreviousHtk)}`}</td><td class="${row.entryOk && row.wallOk && !tacticalBypass && !partialAccess ? "rpg-pass" : "rpg-fail"}">${status}</td></tr>`;
+      const status = !row.entryOk ? "Dura" : !row.wallOk ? "Scalino" : partialAccess ? "Incompleta" : tacticalBypass ? "Bypass" : "OK";
+      return `<tr><th scope="row">T${row.tierId}</th><td><button class="chip" data-rpg-inspect="${index}">A${goal.skill}/F${goal.strength}</button></td><td>${formatZone(row.entryHtk)}</td><td>${row.previousHtk === null ? "—" : formatZone(row.previousHtk)}</td><td>${row.firstSkill === null ? "—" : row.firstSkill}</td><td>${row.strengthBehindHtk === null ? "—" : formatZone(row.strengthBehindHtk)}</td><td>${index === 0 ? "—" : `${formatZone(row.headPreviousHtk)}/${row.floorPreviousHtk === null ? "—" : formatZone(row.floorPreviousHtk)}`}</td><td class="${row.entryOk && row.wallOk && !tacticalBypass && !partialAccess ? "rpg-pass" : "rpg-fail"}">${status}</td></tr>`;
     }).join("");
     const passed = rows.filter(row => row.entryOk && row.wallOk).length;
-    document.getElementById("rpgStatus").textContent = `${enabled ? "SIMULAZIONE CUSTOM — richiede implementazione nella mod." : "Curve originali attive — nessuna nuova legge del danno applicata."} ${weapon.name}: ${passed}/6 tier rispettano ingresso ≤${rpg.entryHtk} e build precedente ≥${rpg.blockedHtk} colpi al corpo. Il laboratorio usa sempre TZonyne, shambler e personaggio fresco con critici; i selettori del grafico non cambiano questo protocollo.`;
+    document.getElementById("rpgStatus").textContent = `${enabled ? "Curva custom" : "Curve originali"} · ${weapon.name}: ${passed}/6 · ingresso ≤${rpg.entryHtk} · muro ≥${rpg.blockedHtk}`;
     const first = CombatEngine.getWeaponLevelDamageModifier(0, state.config);
     const last = CombatEngine.getWeaponLevelDamageModifier(10, state.config);
     const strengthRatio = CombatEngine.getStrengthMod(10, state.config) / CombatEngine.getStrengthMod(0, state.config);
     const issues = [];
-    if (rpg.goals.some((g, i) => i > 0 && g.skill <= rpg.goals[i - 1].skill)) issues.push("Gli obiettivi abilità non crescono strettamente: due tier potrebbero richiedere lo stesso personaggio.");
-    if (rpg.entryHtk >= rpg.blockedHtk) issues.push("Il budget del personaggio ammesso deve essere inferiore a quello del personaggio respinto.");
-    if (!supported) issues.push("Calibrazione disabilitata: i moltiplicatori danno del tier non agiscono direttamente su armi da fuoco e stomp. Sono vie alternative da bilanciare separatamente.");
-    if (state.config.WEAPON_LEVEL_DAMAGE_CURVE?.some((value, i, values) => i > 0 && value < values[i - 1])) issues.push("La curva arma diminuisce a un livello: salire di abilità può peggiorare il danno.");
-    if (state.tzonyne.tiers.some((tier, i, tiers) => i > 0 && tier.dmg > tiers[i - 1].dmg)) issues.push("Il danno risale in almeno un tier: verifica che il recupero sia intenzionale.");
-    document.getElementById("rpgNotes").textContent = `Crescita 0→10: abilità ${formatZone(last / first)}× · forza ${formatZone(strengthRatio)}× · prodotto ${formatZone(last / first * strengthRatio)}×. La proposta distribuisce la crescita moltiplicativa 60% abilità / 40% forza, non il danno additivo. I valori mostrati riflettono anche le modifiche manuali. Forza indietro = abilità prevista / forza precedente; abilità indietro = abilità precedente / forza prevista. Una build incompleta che centra l’ingresso segnala compensazione fra i due percorsi, non un requisito rigido. *Verificato solo sul benchmark e sulle build dichiarate. ${issues.join(" ")} Forza e forma fisica sono progressioni trasversali; forma fisica agisce sul fiato, non su questo prodotto di danno. I tempi di crescita dipendono dall’XP, non sono stimati qui.`;
+    if (rpg.goals.some((g, i) => i > 0 && g.skill <= rpg.goals[i - 1].skill)) issues.push("Obiettivi abilità non strettamente crescenti.");
+    if (rpg.entryHtk >= rpg.blockedHtk) issues.push("Ingresso deve essere < muro.");
+    if (!supported) issues.push("Calibra off: fucili/stomp.");
+    if (state.config.WEAPON_LEVEL_DAMAGE_CURVE?.some((value, i, values) => i > 0 && value < values[i - 1])) issues.push("Curva arma non monotona.");
+    if (state.tzonyne.tiers.some((tier, i, tiers) => i > 0 && tier.dmg > tiers[i - 1].dmg)) issues.push("Danno tier non decrescente.");
+    document.getElementById("rpgNotes").textContent = `0→10: abilità ${formatZone(last / first)}× · forza ${formatZone(strengthRatio)}× · prodotto ${formatZone(last / first * strengthRatio)}×. ${issues.join(" ")}`.trim();
   }
 
   document.getElementById("rpgLaunch").addEventListener("click", () => {
@@ -2015,7 +2015,7 @@ document.addEventListener("DOMContentLoaded", () => {
     update();
   });
   document.getElementById("rpgGoals").innerHTML = rpg.goals.map((goal, index) =>
-    `<tr><th scope="row">T${index + 1}</th><td><input type="number" min="0" max="10" step="1" value="${goal.skill}" data-goal="${index}" data-field="skill" aria-label="Abilità ingresso T${index + 1}"></td><td><input type="number" min="0" max="10" step="1" value="${goal.strength}" data-goal="${index}" data-field="strength" aria-label="Forza ingresso T${index + 1}"></td></tr>`
+    `<tr><th scope="row">T${index + 1}</th><td><input class="rpg-num" type="number" min="0" max="10" step="1" value="${goal.skill}" data-goal="${index}" data-field="skill" aria-label="Abilità ingresso T${index + 1}"></td><td><input class="rpg-num" type="number" min="0" max="10" step="1" value="${goal.strength}" data-goal="${index}" data-field="strength" aria-label="Forza ingresso T${index + 1}"></td></tr>`
   ).join("");
   document.getElementById("rpgGoals").addEventListener("change", event => {
     const input = event.target;

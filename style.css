@@ -810,48 +810,84 @@ input[type="checkbox"] { accent-color: var(--amber); width: 14px; height: 14px; 
 .rpg-panel {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 8px;
   min-width: 0;
   margin-bottom: var(--gap-block);
 }
 
 .rpg-panel[hidden] { display: none; }
-.rpg-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 10px 16px; }
-.rpg-title-group { flex: 1 1 320px; min-width: 0; }
-.rpg-head-flags { display: flex; flex-wrap: wrap; gap: 6px; }
+.rpg-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 12px;
+}
+.rpg-head h2 { margin: 0; }
+.rpg-subtitle { margin: 0; font-size: 11px; }
 .rpg-flag { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--amber); }
 .rpg-flag--muted { color: var(--ghost); }
-.rpg-caveat, .rpg-callout, .rpg-status { font-size: 12px; max-width: none; }
-.rpg-status { color: var(--amber); }
-.rpg-toolbar { display: flex; flex-wrap: wrap; gap: 6px; }
+.rpg-status { margin: 0; font-size: 11px; color: var(--amber); flex: 1 1 220px; min-width: 0; }
+.rpg-toolbar { display: flex; flex-wrap: wrap; gap: 4px; margin-left: auto; }
 .rpg-btn--accent { border-color: var(--amber); color: var(--amber); }
 
-.rpg-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; }
-@media (min-width: 900px) {
-  .rpg-grid { grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); }
+.rpg-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
 }
 
-.rpg-targets, .rpg-settings {
+.rpg-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 10px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem 1.25rem;
+  align-items: start;
+}
+@media (min-width: 900px) {
+  .rpg-grid {
+    grid-template-columns: max-content max-content minmax(0, 1fr);
+  }
 }
 
-.rpg-settings { border-top: 1px solid var(--line); padding-top: 10px; }
-.rpg-field { display: flex; flex-direction: column; gap: 3px; }
-.rpg-field label { font-size: 10.5px; font-weight: 600; text-transform: uppercase; color: var(--ink-dim); }
-.rpg-field-hint { font-size: 10px; color: var(--ghost); }
-.rpg-check { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
-.rpg-notes-list { margin: 0; padding-left: 1.2rem; color: var(--ink-dim); font-size: 12px; }
-.rpg-notes-list strong, .rpg-hint strong, .rpg-card-sub strong { color: var(--ink); }
+.rpg-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.rpg-field label {
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  white-space: nowrap;
+}
+.rpg-check { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-size: 11px; text-transform: uppercase; }
+.rpg-notes-dynamic { margin: 0; font-size: 11px; color: var(--ink-dim); max-width: none; }
 
-.rpg-panel input[type="number"] {
+.rpg-panel input[type="number"],
+.rpg-num {
   background: var(--ground);
   border: 1px solid var(--line);
-  color: var(--ink);
-  padding: 0.22rem 0.4rem;
-  width: 100%;
+  color: var(--figure-ink);
+  padding: 0.1rem 0.28rem;
+  width: 3.6em;
+  min-width: 0;
+  max-width: 5.4em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
+.rpg-num--wide { width: 5.2em; max-width: 6.4em; }
+
+.rpg-table { width: auto; }
+.rpg-table th, .rpg-table td { padding: 0.12rem 0.32rem; }
+.rpg-table--goals, .rpg-table--curve { width: max-content; }
+.rpg-audit-wrap { min-width: 0; overflow: auto; }
+.rpg-table--audit { width: 100%; }
+.rpg-table .chip { padding: 0.08rem 0.32rem; font-size: 10px; }
+.rpg-table input[type="number"] { width: 3.4em; max-width: 3.4em; }
+.rpg-table--curve input[type="number"] { width: 5.2em; max-width: 5.6em; }
 
 .rpg-pass { color: var(--sage); }
 .rpg-fail { color: var(--alarm); }
@@ -876,6 +912,8 @@ input[type="checkbox"] { accent-color: var(--amber); width: 14px; height: 14px; 
 }
 
 @media (max-width: 720px) {
+  .rpg-grid { grid-template-columns: 1fr; }
+  .rpg-table--goals, .rpg-table--curve { width: 100%; }
   .terminal { padding: 0.7rem 0.7rem 1.8rem; }
   h1, .brand-title { font-size: 1.1rem; }
   .canvas-wrapper { height: 320px; min-height: 280px; }
