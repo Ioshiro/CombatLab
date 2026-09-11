@@ -496,6 +496,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     syncTzonyneLevers();
     renderRpgLab();
+    writeQuery();
     rangeControls.forEach(control => {
       const fraction = (Number(control.value) - Number(control.min)) / (Number(control.max) - Number(control.min));
       control.style.setProperty("--range-fill", `${fraction * 100}%`);
@@ -1675,6 +1676,12 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Window global for legend click
+  function writeQuery() {
+    const rpgOpen = !document.getElementById("rpgPanel").hidden;
+    const next = `?weapon=${encodeURIComponent(state.selectedWeaponId)}${rpgOpen ? "&rpg=1" : ""}`;
+    if (location.search !== next) history.replaceState(null, "", `${location.pathname}${next}`);
+  }
+
   window.selectWeapon = function(wid) {
     state.selectedWeaponId = wid;
     if (!Array.from(el.weaponSelect.options).some(option => option.value === wid)) {
@@ -2141,5 +2148,19 @@ document.addEventListener("DOMContentLoaded", () => {
     update();
   });
   populateWeapons();
-  update();
+  const boot = new URLSearchParams(location.search);
+  const bootWeapon = boot.get("weapon");
+  if (bootWeapon && allWeapons.some(w => w.id === bootWeapon)) {
+    window.selectWeapon(bootWeapon);
+  } else {
+    update();
+  }
+  if (boot.get("rpg") === "1") {
+    const panel = document.getElementById("rpgPanel");
+    panel.hidden = false;
+    document.getElementById("rpgLaunch").setAttribute("aria-expanded", "true");
+    document.getElementById("rpgLaunch").textContent = state.config.WEAPON_LEVEL_DAMAGE_CURVE ? "RPG · curva" : "RPG";
+    renderRpgLab();
+    writeQuery();
+  }
 });
