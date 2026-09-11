@@ -533,6 +533,7 @@ p { margin: 0 0 0.75rem; max-width: 72ch; }
   overflow: hidden;
   background: var(--ground);
 }
+.canvas-wrapper canvas { cursor: crosshair; }
 
 .canvas-wrapper canvas,
 #heatmapCanvas { display: block; width: 100%; height: 100%; }
@@ -669,18 +670,20 @@ table.dense-table tr.selected td {
 
 .chart-tooltip {
   position: absolute;
-  top: 16px;
-  right: 16px;
+  left: 0;
+  top: 0;
+  right: auto;
   background: var(--paper);
   border: 1px solid var(--line);
-  padding: 10px 14px;
+  padding: 8px 10px;
   font-size: 11px;
-  min-width: 200px;
-  max-width: min(320px, calc(100% - 24px));
+  min-width: 0;
+  width: max-content;
+  max-width: min(260px, calc(100% - 16px));
   pointer-events: none;
-  display: flex;
+  display: none;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
   z-index: 10;
 }
 

@@ -78,6 +78,8 @@ document.addEventListener("DOMContentLoaded", () => {
   };
   let zoneBaseline = { config: { ...state.config }, tzonyne: cloneTZonyne(state.tzonyne), sandbox: { ...state.sandbox } };
   let zonePlot = null;
+  let chartHit = null;
+  let lastPointer = null;
   const rangeControls = document.querySelectorAll('input[type="range"]');
   const zonePoints = new Map();
   const rpg = {
@@ -430,7 +432,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("zoneSelection").hidden = state.viewMode !== "zones";
     document.body.dataset.view = state.viewMode;
     el.viewBtns.forEach(b => b.setAttribute("aria-pressed", String(b.dataset.view === state.viewMode)));
-    if (state.viewMode !== "single") el.chartTooltip.style.display = "none";
+    hideTooltip();
     // Update Stage & Table depending on View Mode
     if (state.viewMode === "single") {
       el.stageLegend.innerHTML = `
@@ -503,10 +505,148 @@ document.addEventListener("DOMContentLoaded", () => {
     syncTzonyneLevers();
     renderRpgLab();
     writeQuery();
+    if (lastPointer) inspectChart(lastPointer.px, lastPointer.py);
     rangeControls.forEach(control => {
       const fraction = (Number(control.value) - Number(control.min)) / (Number(control.max) - Number(control.min));
       control.style.setProperty("--range-fill", `${fraction * 100}%`);
     });
+  }
+
+  function hideTooltip() {
+    el.chartTooltip.style.display = "none";
+    el.chartTooltip.replaceChildren();
+  }
+
+  function showTooltip(html, px, py) {
+    const box = el.chartTooltip;
+    const wrap = el.mainCanvas.parentElement;
+    box.innerHTML = html;
+    box.style.display = "flex";
+    const tw = box.offsetWidth;
+    const th = box.offsetHeight;
+    const ww = wrap.clientWidth;
+    const wh = wrap.clientHeight;
+    const gap = 12;
+    const edge = 6;
+    let left = px + gap;
+    let top = py + gap;
+    if (left + tw + edge > ww) left = px - tw - gap;
+    if (top + th + edge > wh) top = py - th - gap;
+    if (left < edge) left = edge;
+    if (top < edge) top = edge;
+    if (left + tw + edge > ww) left = Math.max(edge, ww - tw - edge);
+    if (top + th + edge > wh) top = Math.max(edge, wh - th - edge);
+    box.style.left = `${Math.round(left)}px`;
+    box.style.top = `${Math.round(top)}px`;
+    box.style.right = "auto";
+  }
+
+  function tipRow(key, val) {
+    return `<div class="tooltip-row"><span class="tooltip-key">${key}</span><span class="tooltip-val">${val}</span></div>`;
+  }
+
+  function inspectChart(px, py) {
+    lastPointer = { px, py };
+    const hit = chartHit;
+    if (!hit) { hideTooltip(); return; }
+
+    if (hit.kind === "radar") {
+      const dx = px - hit.cx;
+      const dy = py - hit.cy;
+      if (Math.hypot(dx, dy) > hit.radius + 28) { hideTooltip(); return; }
+      let angle = Math.atan2(dy, dx) + Math.PI / 2;
+      if (angle < 0) angle += Math.PI * 2;
+      const i = Math.round(angle / hit.step) % hit.n;
+      const a = hit.active.axes[i];
+      const r = hit.ref.axes[i];
+      showTooltip(
+        `<div class="tooltip-title"><span>${a.label}</span><span>${a.value}/100</span></div>` +
+        tipRow(hit.activeName, a.desc) +
+        tipRow(hit.refName, r.desc),
+        px, py
+      );
+      return;
+    }
+
+    const { pad, chartW, chartH } = hit;
+    if (px < pad.left || px > pad.left + chartW || py < pad.top || py > pad.top + chartH) {
+      if (state.viewMode === "single" && state.hoverLevel !== null) {
+        state.hoverLevel = null;
+        renderSingleWeaponCanvas(traceProgression(getActiveWeapon()));
+      }
+      hideTooltip();
+      return;
+    }
+
+    if (hit.kind === "level") {
+      const lvl = Math.max(0, Math.min(10, Math.round((px - pad.left) / chartW * 10)));
+      if (state.viewMode === "single" && state.hoverLevel !== lvl) {
+        state.hoverLevel = lvl;
+        renderSingleWeaponCanvas(hit.progression);
+      }
+      state.hoverLevel = lvl;
+      let html;
+      if (hit.view === "single") {
+        const l = hit.progression.levels[lvl];
+        const floorDmg = state.floorOverkillMode ? l.damage.floorHead : l.damage.floorBody;
+        const floorHtk = state.floorOverkillMode ? l.htk.floorHead : l.htk.floorBody;
+        html = `<div class="tooltip-title"><span>Lv ${lvl}</span><span>${CombatEngine.getWeaponLevelDamageModifier(lvl, state.config).toFixed(3)}×</span></div>` +
+          tipRow("Corpo", `${l.damage.freshBody.toFixed(2)} HP · ${l.htk.body} colpi`) +
+          tipRow("Testa", `${l.damage.head.toFixed(2)} HP · ${l.htk.head} colpi`) +
+          tipRow("Terra", `${floorDmg.toFixed(2)} HP · ${floorHtk} colpi`) +
+          tipRow("Atteso", `${l.htk.expectedBody} colpi · crit ${l.damage.critChance.toFixed(0)}%`);
+      } else if (hit.view === "multi") {
+        html = `<div class="tooltip-title"><span>Lv ${lvl}</span><span>corpo</span></div>` +
+          hit.curves.map(c => {
+            const l = c.prog.levels[lvl];
+            return tipRow(c.wpn.name, `${l.damage.freshBody.toFixed(2)} HP · HTK ${l.htk.body}`);
+          }).join("");
+      } else {
+        const v = hit.vanilla.levels[lvl];
+        const b = hit.rebal.levels[lvl];
+        html = `<div class="tooltip-title"><span>Lv ${lvl}</span></div>` +
+          tipRow("Vanilla corpo", `${v.damage.freshBody.toFixed(2)} HP`) +
+          tipRow("Attivo corpo", `${b.damage.freshBody.toFixed(2)} HP`) +
+          tipRow("Vanilla terra", `${v.damage.floorBody.toFixed(2)} HP`) +
+          tipRow("Attivo terra", `${b.damage.floorBody.toFixed(2)} HP`);
+      }
+      showTooltip(html, px, py);
+      return;
+    }
+
+    if (hit.kind === "tier") {
+      const n = Math.max(1, hit.tiers.length - 1);
+      const index = Math.max(0, Math.min(hit.tiers.length - 1, Math.round((px - pad.left) / chartW * n)));
+      const tier = hit.tiers[index];
+      const html = `<div class="tooltip-title"><span>T${tier.id}</span><span>${zoneUnit()}</span></div>` +
+        hit.series.map(s => {
+          const point = s.points[index];
+          const extra = state.zoneCompare && s.baseline[index]
+            ? ` · rif ${formatZone(s.baseline[index][state.zoneMetric])}`
+            : "";
+          return tipRow(s.label, `${formatZone(point[state.zoneMetric])}${extra}`);
+        }).join("");
+      showTooltip(html, px, py);
+      return;
+    }
+
+    if (hit.kind === "rounds") {
+      let best = null;
+      let bestD = Infinity;
+      hit.rounds.forEach((round, i) => {
+        const z = round.zombieIndex > 0 ? round.zombieIndex : i + 1;
+        const x = pad.left + ((z - 1) / Math.max(1, hit.hordeSize - 1)) * chartW;
+        const d = Math.abs(px - x);
+        if (d < bestD) { bestD = d; best = round; }
+      });
+      if (!best) { hideTooltip(); return; }
+      showTooltip(
+        `<div class="tooltip-title"><span>Zombie #${best.zombieIndex}</span><span>${best.endurancePct}%</span></div>` +
+        tipRow("Swing totali", String(best.totalSwings)) +
+        tipRow("Colpi su questo", String(best.swings)),
+        px, py
+      );
+    }
   }
 
   // --- CANVAS 1: SINGLE WEAPON MULTI-TRACE ---
@@ -654,32 +794,16 @@ document.addEventListener("DOMContentLoaded", () => {
       ctx.fillText(`1-Shot Testa (Lv ${headCrossLvl})`, cx, cy - 10);
     }
 
-    // Interactive Hover Crosshair
-    const targetLvl = state.hoverLevel !== null ? state.hoverLevel : state.selectedSkillLevel;
-    if (targetLvl !== null) {
-      const hx = getX(targetLvl);
+    if (state.hoverLevel !== null) {
+      const hx = getX(state.hoverLevel);
       ctx.strokeStyle = INK.ghost;
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(hx, pad.top);
       ctx.lineTo(hx, pad.top + chartH);
       ctx.stroke();
-
-      const lData = progression.levels[targetLvl];
-      el.chartTooltip.style.display = "flex";
-      el.chartTooltip.innerHTML = `
-        <div class="tooltip-title"><span>Livello Abilità ${targetLvl}</span><span>${CombatEngine.getWeaponLevelDamageModifier(targetLvl, state.config).toFixed(3)}× mult</span></div>
-        <div class="tooltip-row"><span class="tooltip-key" style="color:var(--col-fresh)">Corpo Ottimale:</span><span class="tooltip-val">${lData.damage.freshBody.toFixed(2)} HP (${lData.htk.body} colpi)</span></div>
-        <div class="tooltip-row"><span class="tooltip-key" style="color:var(--col-head)">Colpo Testa:</span><span class="tooltip-val">${lData.damage.head.toFixed(2)} HP (${lData.htk.head} colpi)</span></div>
-        <div class="tooltip-row"><span class="tooltip-key" style="color:var(--col-floor)">A Terra:</span><span class="tooltip-val">${(state.floorOverkillMode ? lData.damage.floorHead : lData.damage.floorBody).toFixed(2)} HP (${state.floorOverkillMode ? lData.htk.floorHead : lData.htk.floorBody} colpi)</span></div>
-        <div class="tooltip-row"><span class="tooltip-key">HTK atteso (crit ${lData.damage.critChance.toFixed(0)}%):</span><span class="tooltip-val">${lData.htk.expectedBody} colpi</span></div>
-        <div class="tooltip-row"><span class="tooltip-key" style="color:var(--col-exerted)">Fatica Moderata (-50%):</span><span class="tooltip-val">${lData.damage.exerted.toFixed(2)} HP (${lData.htk.exerted} colpi)</span></div>
-        <div class="tooltip-row"><span class="tooltip-key" style="color:var(--col-exhausted)">Esausto (-95%):</span><span class="tooltip-val">${lData.damage.exhausted.toFixed(2)} HP (${lData.htk.exhausted} colpi)</span></div>
-        <div class="tooltip-row" style="margin-top:4px; border-top:1px solid var(--border-subtle); padding-top:4px;"><span class="tooltip-key">Longevità Arma:</span><span class="tooltip-val" style="color:var(--col-head)">~${lData.kills.body} zombie eliminati</span></div>
-      `;
-    } else {
-      el.chartTooltip.style.display = "none";
     }
+    chartHit = { kind: "level", view: "single", pad, chartW, chartH, progression };
   }
 
   // --- CANVAS 2: MULTI-WEAPON OVERLAY ---
@@ -793,6 +917,7 @@ document.addEventListener("DOMContentLoaded", () => {
         <span style="color:${c.wpn.id === state.selectedWeaponId ? 'var(--figure-ink)' : 'var(--ink-dim)'}; font-weight:${c.wpn.id === state.selectedWeaponId ? '700' : '500'}">${c.wpn.name}</span>
       </div>
     `).join("") + `<div class="legend-item"><div class="legend-swatch pat-zombie"></div><span>Zombie HP</span></div>`;
+    chartHit = { kind: "level", view: "multi", pad, chartW, chartH, curves };
   }
 
   // --- CANVAS 3: DIFF VANILLA VS REBALANCED ---
@@ -895,6 +1020,7 @@ document.addEventListener("DOMContentLoaded", () => {
       <div class="legend-item"><div class="legend-swatch pat-head"></div><span>Ribilanciato: Corpo</span></div>
       <div class="legend-item"><div class="legend-swatch pat-zombie"></div><span>Zombie HP</span></div>
     `;
+    chartHit = { kind: "level", view: "diff", pad, chartW, chartH, vanilla: progVanilla, rebal: progRebalanced };
   }
 
   // --- CANVAS 4: HORDE COMBAT & DEATH SPIRAL ---
@@ -1009,6 +1135,7 @@ document.addEventListener("DOMContentLoaded", () => {
       <div class="legend-item"><div class="legend-swatch pat-floor"></div><span>Zona collasso (−95% danno)</span></div>
       <div class="legend-item"><div class="legend-swatch pat-exhausted"></div><span>Cliff point inizio spirale</span></div>
     `;
+    chartHit = { kind: "rounds", pad, chartW, chartH, rounds: sim.rounds, hordeSize: state.hordeSize };
   }
 
   // --- CANVAS 5: RADAR / SPIDER CHART ---
@@ -1113,6 +1240,7 @@ document.addEventListener("DOMContentLoaded", () => {
       <div class="legend-item"><div class="legend-swatch pat-active"></div><span>${weapon.name} (arma attiva)</span></div>
       <div class="legend-item"><div class="legend-swatch pat-ref"></div><span>${refWeapon.name} (benchmark)</span></div>
     `;
+    chartHit = { kind: "radar", cx: centerX, cy: centerY, radius, n: numAxes, step: angleStep, active: metricsActive, ref: metricsRef, activeName: weapon.name, refName: refWeapon.name };
   }
 
   // --- TABLES RENDERING ---
@@ -1510,7 +1638,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     const x = i => pad.left + i / (tiers.length - 1) * chartW;
     const y = v => pad.top + chartH * (1 - (state.zoneLog ? Math.log1p(v) / Math.log1p(maxY) : v / maxY));
-    zonePlot = { pad, chartW, tiers };
+    zonePlot = { pad, chartW, chartH, tiers };
+    chartHit = { kind: "tier", pad, chartW, chartH, tiers, series };
     ctx.clearRect(0, 0, width, height);
     ctx.font = FONT;
     ctx.fillStyle = INK.dim;
@@ -1705,37 +1834,19 @@ document.addEventListener("DOMContentLoaded", () => {
     update();
   };
 
-  // Canvas Mouse Move (Interactive Crosshair)
   el.mainCanvas.addEventListener("mousemove", e => {
-    if (state.viewMode !== "single") {
-      state.hoverLevel = null;
-      el.chartTooltip.style.display = "none";
-      return;
-    }
     const rect = el.mainCanvas.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const padLeft = 60;
-    const padRight = 60;
-    const chartW = rect.width - padLeft - padRight;
-
-    if (mouseX >= padLeft && mouseX <= rect.width - padRight) {
-      const ratio = (mouseX - padLeft) / chartW;
-      const lvl = Math.max(0, Math.min(10, Math.round(ratio * 10)));
-      if (state.hoverLevel !== lvl) {
-        state.hoverLevel = lvl;
-        renderSingleWeaponCanvas(traceProgression(getActiveWeapon()));
-      }
-    } else {
-      state.hoverLevel = null;
-      renderSingleWeaponCanvas(traceProgression(getActiveWeapon()));
-    }
+    inspectChart(e.clientX - rect.left, e.clientY - rect.top);
   });
 
   el.mainCanvas.addEventListener("mouseleave", () => {
-    state.hoverLevel = null;
-    if (state.viewMode === "single") {
+    lastPointer = null;
+    if (state.hoverLevel !== null && state.viewMode === "single") {
+      state.hoverLevel = null;
       renderSingleWeaponCanvas(traceProgression(getActiveWeapon()));
     }
+    state.hoverLevel = null;
+    hideTooltip();
   });
 
   el.mainCanvas.addEventListener("click", () => {
