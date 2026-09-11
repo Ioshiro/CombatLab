@@ -1543,9 +1543,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const selected = s.skill === state.selectedSkillLevel && s.strength === state.character.strength;
       const draw = (points, reference) => {
         ctx.save(); ctx.strokeStyle = s.color; ctx.fillStyle = s.color;
-        ctx.lineWidth = reference ? 1.15 : selected ? 2.8 : 2;
-        ctx.globalAlpha = reference ? 0.32 : selected ? 1 : 0.92;
-        ctx.setLineDash(reference ? [1.5, 5] : []);
+        ctx.lineWidth = reference ? 1.3 : selected ? 2.8 : 2;
+        ctx.globalAlpha = reference ? 0.38 : selected ? 1 : 0.92;
+        ctx.setLineDash(reference ? [2, 4.5] : []);
         ctx.beginPath();
         points.forEach((p,i) => { const py = y(p[state.zoneMetric]); if (i===0) ctx.moveTo(x(i),py); else ctx.lineTo(x(i),py); });
         ctx.stroke();
