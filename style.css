@@ -664,8 +664,7 @@ table.dense-table tr.selected td {
   width: 0.7rem;
   height: 0.7rem;
   border: 1px solid var(--trace-color, currentColor);
-  background-color: var(--trace-color, currentColor);
-  background-image: repeating-linear-gradient(var(--trace-angle, 45deg), rgba(12,15,12,0.35), rgba(12,15,12,0.35) 1px, transparent 1px, transparent 3px);
+  background: var(--trace-color, currentColor);
 }
 
 .chart-tooltip {

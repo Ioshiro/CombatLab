@@ -9,7 +9,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const FONT = "11px 'IBM Plex Mono', ui-monospace, monospace";
   const FONT_BOLD = "700 11px 'IBM Plex Mono', ui-monospace, monospace";
   const FONT_SM = "10px 'IBM Plex Mono', ui-monospace, monospace";
-  const TRACE_MARKS = ["circle", "square", "triangle", "diamond"];
+  const TRACE_MARKS = ["circle", "square", "triangle", "diamond", "v", "plus"];
   const TRACE_DASHES = [[], [6, 4], [2, 3], [10, 3, 2, 3], [4, 4], [8, 2, 2, 2], [1, 3]];
   const TRACE_INKS = [
     "#7ec8c4", "#7aa2e8", "#e4d2a8", "#e0b03a", "#d67a32",
@@ -24,6 +24,12 @@ document.addEventListener("DOMContentLoaded", () => {
     if (kind === "square") ctx.rect(x - r, y - r, r * 2, r * 2);
     else if (kind === "triangle") { ctx.moveTo(x, y - r); ctx.lineTo(x + r, y + r); ctx.lineTo(x - r, y + r); ctx.closePath(); }
     else if (kind === "diamond") { ctx.moveTo(x, y - r); ctx.lineTo(x + r, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r, y); ctx.closePath(); }
+    else if (kind === "v") { ctx.moveTo(x - r, y - r); ctx.lineTo(x + r, y - r); ctx.lineTo(x, y + r); ctx.closePath(); }
+    else if (kind === "plus") {
+      const t = r * 0.38;
+      ctx.rect(x - t, y - r, t * 2, r * 2);
+      ctx.rect(x - r, y - t, r * 2, t * 2);
+    }
     else ctx.arc(x, y, r, 0, Math.PI * 2);
     ctx.fill();
   }
@@ -1522,7 +1528,7 @@ document.addEventListener("DOMContentLoaded", () => {
     ctx.fillRect(x(selectedIndex)-12, pad.top, 24, chartH);
     if (state.zoneMetric !== "stamina") {
       ctx.save();
-      ctx.setLineDash([6, 5]); ctx.strokeStyle = INK.amber;
+      ctx.setLineDash([16, 8]); ctx.strokeStyle = INK.amber; ctx.lineWidth = 1.15; ctx.globalAlpha = 0.85;
       ctx.beginPath(); ctx.moveTo(pad.left,y(threshold)); ctx.lineTo(width-pad.right,y(threshold)); ctx.stroke();
       ctx.restore();
     }
@@ -1537,15 +1543,21 @@ document.addEventListener("DOMContentLoaded", () => {
       const selected = s.skill === state.selectedSkillLevel && s.strength === state.character.strength;
       const draw = (points, reference) => {
         ctx.save(); ctx.strokeStyle = s.color; ctx.fillStyle = s.color;
-        ctx.lineWidth = selected ? 2.6 : 1.5;
-        ctx.globalAlpha = reference ? 0.45 : selected ? 1 : 0.8;
-        ctx.setLineDash(reference ? [5,5] : (selected ? [] : s.dash));
+        ctx.lineWidth = reference ? 1.15 : selected ? 2.8 : 2;
+        ctx.globalAlpha = reference ? 0.32 : selected ? 1 : 0.92;
+        ctx.setLineDash(reference ? [1.5, 5] : []);
         ctx.beginPath();
         points.forEach((p,i) => { const py = y(p[state.zoneMetric]); if (i===0) ctx.moveTo(x(i),py); else ctx.lineTo(x(i),py); });
         ctx.stroke();
         ctx.setLineDash([]);
         if (!reference) points.forEach((p,i) => {
-          fillMarker(ctx, x(i), y(p[state.zoneMetric]), s.mark, selected ? 4.2 : 3);
+          ctx.fillStyle = s.color;
+          fillMarker(ctx, x(i), y(p[state.zoneMetric]), s.mark, selected ? 4.6 : 3.4);
+          ctx.strokeStyle = INK.ground;
+          ctx.lineWidth = 1.15;
+          ctx.globalAlpha = 1;
+          ctx.stroke();
+          ctx.strokeStyle = s.color;
         });
         ctx.restore();
       };
