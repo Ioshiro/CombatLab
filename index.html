@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Knox AEBS — sector combat.balance</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="terminal">
+
+  <header class="header-bar">
+    <div class="brand-group">
+      <p class="mast-meta">Knox County AEBS · Build 42.20 · sector combat.balance</p>
+      <h1 class="brand-title">Knox AEBS — sector combat.balance</h1>
+      <span class="brand-desc">Danno, HTK e power level per zona · modello dal decompilato Java e dagli scripts. Stime, non DPS in-game.</span>
+    </div>
+
+    <div class="header-controls">
+      <div class="preset-box">
+        <label for="presetSelect">Preset</label>
+        <select id="presetSelect" class="preset-select">
+          <option value="la_resistenza" selected>La Resistenza (TZonyne)</option>
+          <option value="vanilla_apocalypse">Vanilla B42 (Apocalypse)</option>
+          <option value="vanilla_multihit">Vanilla B42 (Survivor - MultiHit ON)</option>
+          <option value="tough_zombies">Vanilla Zombie Tough (3.65 HP)</option>
+          <option value="rebalance_hardcore">Proposta: Gritty Survival</option>
+          <option value="rebalance_endurance_focus">Proposta: Attrito & Usura</option>
+        </select>
+      </div>
+
+      <nav class="view-modes" aria-label="Viste di analisi">
+        <button class="view-btn cue-btn active" data-view="zones"><i class="cue-pat" aria-hidden="true"></i>Progressione per tier</button>
+        <button class="view-btn cue-btn" data-view="single"><i class="cue-pat" aria-hidden="true"></i>Analisi singola</button>
+        <button class="view-btn cue-btn" data-view="multi"><i class="cue-pat" aria-hidden="true"></i>Confronto armi</button>
+        <button class="view-btn cue-btn" data-view="diff"><i class="cue-pat" aria-hidden="true"></i>Diff vanilla vs mod</button>
+        <button class="view-btn cue-btn" data-view="horde"><i class="cue-pat" aria-hidden="true"></i>Orda &amp; fiato</button>
+        <button class="view-btn cue-btn" data-view="radar"><i class="cue-pat" aria-hidden="true"></i>Radar &amp; stun-lock</button>
+      </nav>
+
+      <button type="button" class="rpg-launch" id="rpgLaunch" aria-expanded="false" aria-controls="rpgPanel" title="Apre il laboratorio opzionale di progressione RPG: obiettivi per tier, curve ipotetiche e audit delle soglie">Laboratorio RPG</button>
+    </div>
+  </header>
+
+  <div class="cut" aria-hidden="true"></div>
+
+  <section class="ribbon-bar">
+    <div class="ribbon-group">
+      <span class="ribbon-label">Categoria</span>
+      <div class="ribbon-chips" id="categoryChips">
+        <button class="chip cue-btn cue-all active" data-cat="ALL"><i class="cue-pat" aria-hidden="true"></i>Tutte</button>
+        <button class="chip cue-btn cue-melee" data-cat="Axe"><i class="cue-pat" aria-hidden="true"></i>Axe</button>
+        <button class="chip cue-btn cue-melee" data-cat="Blunt"><i class="cue-pat" aria-hidden="true"></i>Long Blunt</button>
+        <button class="chip cue-btn" data-cat="SmallBlunt"><i class="cue-pat" aria-hidden="true"></i>Short Blunt</button>
+        <button class="chip cue-btn" data-cat="LongBlade"><i class="cue-pat" aria-hidden="true"></i>Long Blade</button>
+        <button class="chip cue-btn" data-cat="SmallBlade"><i class="cue-pat" aria-hidden="true"></i>Short Blade</button>
+        <button class="chip cue-btn cue-melee" data-cat="Spear"><i class="cue-pat" aria-hidden="true"></i>Spear</button>
+        <button class="chip cue-btn cue-firearm" data-cat="Firearm"><i class="cue-pat" aria-hidden="true"></i>Firearm</button>
+        <button class="chip cue-btn" data-cat="Unarmed"><i class="cue-pat" aria-hidden="true"></i>Stomp</button>
+      </div>
+    </div>
+
+    <div class="ribbon-group">
+      <label class="ribbon-label" for="weaponSelect">Arma</label>
+      <select id="weaponSelect" class="ribbon-select"></select>
+    </div>
+
+    <div class="ribbon-group">
+      <label class="ribbon-label" for="selectToughness">Toughness zombie</label>
+      <select id="selectToughness" class="ribbon-select">
+        <option value="2" selected>Normal (1.95 HP)</option>
+        <option value="1">Tough (3.65 HP, -6% crit)</option>
+        <option value="3">Fragile (0.65 HP, +6% crit)</option>
+        <option value="4">Random (0.5–3.8 HP)</option>
+        <option value="custom">Custom HP...</option>
+      </select>
+      <input type="number" id="inputCustomHP" class="ribbon-select" style="width: 70px; display: none;" value="4.0" step="0.5" min="0.5" max="30" aria-label="HP zombie personalizzati">
+    </div>
+
+    <div class="ribbon-group">
+      <label class="ribbon-label" for="sliderSkillLevel">Livello abilità</label>
+      <div class="ribbon-chips" id="skillChips" role="group" aria-label="Scorciatoie livello abilità">
+        <button class="chip" data-lvl="0">Lv 0</button>
+        <button class="chip active" data-lvl="3">Lv 3</button>
+        <button class="chip" data-lvl="5">Lv 5</button>
+        <button class="chip" data-lvl="7">Lv 7</button>
+        <button class="chip" data-lvl="10">Lv 10</button>
+      </div>
+      <input type="range" id="sliderSkillLevel" min="0" max="10" step="1" value="3" aria-label="Livello abilità arma (0-10)">
+      <span class="num lever-val" id="valSkillLevelText" aria-live="off">Lv 3</span>
+    </div>
+
+    <div class="ribbon-group">
+      <label class="legend-item" style="cursor: pointer;">
+        <input type="checkbox" id="checkMultiHit">
+        <span>Multi-Hit zombies</span>
+      </label>
+    </div>
+
+    <div class="ribbon-group">
+      <label class="ribbon-label" for="sliderStrength">Forza</label>
+      <input type="range" id="sliderStrength" min="0" max="10" step="1" value="5" aria-label="Perk Forza (0-10)">
+      <span class="num lever-val" id="valStrengthText">5</span>
+    </div>
+
+    <div class="ribbon-group ribbon-group--stacked">
+      <div class="ribbon-inline">
+        <label class="ribbon-label" for="sliderFitness">Forma fisica</label>
+        <input type="range" id="sliderFitness" min="0" max="10" step="1" value="5" aria-label="Forma fisica (Fitness 0-10)" aria-describedby="fitnessHint">
+        <span class="num lever-val" id="valFitnessText">5</span>
+      </div>
+      <span class="field-hint" id="fitnessHint">Agisce sul fiato, non sul danno</span>
+    </div>
+
+    <div class="ribbon-group">
+      <label class="ribbon-label" for="sliderMaintenance">Maintenance</label>
+      <input type="range" id="sliderMaintenance" min="0" max="10" step="1" value="2" aria-label="Perk Maintenance (0-10)">
+      <span class="num lever-val" id="valMaintenanceText">2</span>
+    </div>
+
+    <div class="ribbon-group" id="tzonyneRibbon">
+      <label class="legend-item" style="cursor: pointer;">
+        <input type="checkbox" id="checkTZonyne">
+        <span>TZonyne</span>
+      </label>
+      <label class="legend-item" style="cursor: pointer;">
+        <input type="checkbox" id="checkNight">
+        <span>Notte</span>
+      </label>
+    </div>
+  </section>
+
+  <div class="cut" aria-hidden="true"></div>
+
+  <main class="workspace">
+
+    <section class="rpg-panel" id="rpgPanel" hidden aria-labelledby="rpgPanelTitle">
+      <div class="rpg-head">
+        <div class="rpg-title-group">
+          <h2 id="rpgPanelTitle">RPG Progression Lab</h2>
+          <p class="rpg-subtitle">Build d’ingresso per T1 → T6, curve danno ipotetiche e audit delle soglie di colpi: verifica se gli scalini tra tier tengono prima di toccare il motore.</p>
+        </div>
+        <div class="rpg-head-flags">
+          <span class="rpg-flag">Simulazione personalizzata</span>
+          <span class="rpg-flag rpg-flag--muted">Non Vanilla · non mod</span>
+        </div>
+      </div>
+
+      <p class="rpg-caveat">Il modello di danno resta quello ricavato dal decompilato Java e dagli script. Obiettivi, curve e costanti di questo laboratorio sono <strong>ipotesi di lavoro</strong>: servono a testare scalini ripidi, non descrivono Vanilla né il preset TZonyne.</p>
+
+      <p class="rpg-status" id="rpgStatus" role="status">Pronto: compila la build d’ingresso di ogni tier, poi usa «Calibra danno dei tier».</p>
+
+      <div class="rpg-toolbar" role="group" aria-label="Azioni del laboratorio">
+        <button type="button" class="chip rpg-btn" id="rpgProposal" title="Riempe le curve con una progressione geometrica tra base e tetto">Proponi curva geometrica</button>
+        <button type="button" class="chip rpg-btn" id="rpgLinear" title="Svuota le curve e torna alla formula originale del motore">Ripristina curve originali</button>
+        <button type="button" class="chip rpg-btn rpg-btn--accent" id="rpgCalibrate" title="Cerca il moltiplicatore danno minimo per tier che rispetta il target di colpi in ingresso dell'arma selezionata">Calibra danno dei tier</button>
+        <button type="button" class="chip rpg-btn" id="rpgExport" title="Scarica obiettivi, curve e parametri per riprodurre il progetto">Esporta progetto JSON</button>
+      </div>
+
+      <p class="rpg-hint">«Proponi curva geometrica» genera i fattori arma tra base e tetto scelti (esempio iniziale: <strong>0.3× → 72.9×</strong>) e imposta la forza a <strong>0.85× → 1.10×</strong>, riducendo il vantaggio iniziale. Tutte le 11 righe restano modificabili; non ricalibra automaticamente i tier.</p>
+
+      <p class="rpg-callout"><strong>Sono soglie morbide di efficienza, non blocchi d’accesso:</strong> con danno positivo restano possibili kiting, gruppo e molti colpi. Un requisito rigido richiede una regola dedicata nella mod.</p>
+
+      <div class="rpg-grid">
+        <section class="rpg-card" aria-labelledby="rpgGoalsTitle">
+          <div class="rpg-card-head">
+            <h3 id="rpgGoalsTitle">Build d’ingresso per tier</h3>
+            <p class="rpg-card-sub">Una riga per tier: abilità e forza attese quando il giocatore entra nella zona. Sono il metro dell’audit, non un vincolo di gioco.</p>
+          </div>
+
+          <div class="rpg-targets">
+            <div class="rpg-field">
+              <label for="rpgEntryHtk">Colpi ammessi in ingresso</label>
+              <input type="number" id="rpgEntryHtk" value="3" min="1" max="10" step="0.5" inputmode="decimal" aria-describedby="rpgEntryHtkHint">
+              <span class="rpg-field-hint" id="rpgEntryHtkHint">Corpo fresco. Esempio: 3 colpi = ingresso «ok».</span>
+            </div>
+            <div class="rpg-field">
+              <label for="rpgBlockedHtk">Colpi minimi sotto livello</label>
+              <input type="number" id="rpgBlockedHtk" value="8" min="2" max="100" step="1" inputmode="numeric" aria-describedby="rpgBlockedHtkHint">
+              <span class="rpg-field-hint" id="rpgBlockedHtkHint">Muro. Esempio: 8 colpi per la build precedente.</span>
+            </div>
+          </div>
+
+          <div class="table-scroll rpg-scroll">
+            <table class="dense-table rpg-table" id="rpgGoalsTable" aria-label="Build d’ingresso per tier: abilità e forza">
+              <thead>
+                <tr>
+                  <th scope="col">Tier</th>
+                  <th scope="col">Abilità</th>
+                  <th scope="col">Forza</th>
+                </tr>
+              </thead>
+              <tbody id="rpgGoals"></tbody>
+            </table>
+          </div>
+
+          <p class="rpg-hint">Queste build sono obiettivi di progetto, non requisiti imposti dal motore. Confronta sempre <strong>abilità 0 / forza 10</strong> con la build prevista: la forza iniziale non dovrebbe sbloccare da sola il tier successivo.</p>
+        </section>
+
+        <section class="rpg-card" aria-labelledby="rpgCurveTitle">
+          <div class="rpg-card-head">
+            <div class="rpg-card-head-row">
+              <h3 id="rpgCurveTitle">Curve danno personalizzate</h3>
+              <label class="rpg-check" for="rpgCurveEnabled">
+                <input type="checkbox" id="rpgCurveEnabled">
+                <span>Curve attive</span>
+              </label>
+            </div>
+            <p class="rpg-card-sub">Fattori per livello abilità (arma) e per punto forza. Casella spenta = formula originale del motore, nessuna curva applicata.</p>
+          </div>
+
+          <div class="table-scroll rpg-scroll rpg-scroll--curve">
+            <table class="dense-table rpg-table" id="rpgCurveTable" aria-label="Curve danno per livello abilità e forza">
+              <thead>
+                <tr>
+                  <th scope="col">Lv</th>
+                  <th scope="col">Arma ×</th>
+                  <th scope="col">Forza ×</th>
+                </tr>
+              </thead>
+              <tbody id="rpgCurve"></tbody>
+            </table>
+          </div>
+
+          <div class="rpg-settings">
+            <div class="rpg-field">
+              <label for="rpgBase">Base geometrica (Lv 0)</label>
+              <input type="number" id="rpgBase" value="0.3" min="0.001" max="5" step="0.001" inputmode="decimal">
+            </div>
+            <div class="rpg-field">
+              <label for="rpgCap">Tetto geometrico (Lv 10)</label>
+              <input type="number" id="rpgCap" value="72.9" min="0.001" max="10000" step="0.001" inputmode="decimal">
+            </div>
+            <div class="rpg-field">
+              <label for="rpgGlobal">Fattore globale mischia</label>
+              <input type="number" id="rpgGlobal" value="0.15" min="0.001" max="2" step="0.001" inputmode="decimal">
+            </div>
+            <div class="rpg-field">
+              <label for="rpgBaseDamage">Base curva lineare</label>
+              <input type="number" id="rpgBaseDamage" value="0.3" min="0.001" max="5" step="0.001" inputmode="decimal">
+            </div>
+          </div>
+
+          <p class="rpg-hint">Base e tetto generano la curva geometrica. Il fattore globale scala il danno di mischia; la base lineare vale solo a curve spente. Disattivare le curve non ripristina i moltiplicatori dei tier: ricalibra o usa Reset TZonyne.</p>
+        </section>
+      </div>
+
+      <section class="rpg-card rpg-card--audit" aria-labelledby="rpgAuditTitle">
+        <div class="rpg-card-head">
+          <h3 id="rpgAuditTitle">Audit delle soglie per tier</h3>
+          <p class="rpg-card-sub">Colpi della build d’ingresso e della build precedente sull’arma selezionata (corpo fresco). «Calibra danno dei tier» muove <strong>solo il danno del tier</strong> per centrare l’ingresso: non garantisce il muro e non tocca critici o mix di zombie. Fucili e stomp non si calibrano dal danno dei tier.</p>
+        </div>
+
+        <div class="table-scroll rpg-scroll">
+          <table class="dense-table rpg-table rpg-table--audit" id="rpgAuditTable" aria-label="Audit delle soglie di colpi per tier">
+            <thead>
+              <tr>
+                <th scope="col">Tier</th>
+                <th scope="col">Build ingresso</th>
+                <th scope="col">Colpi ingresso</th>
+                <th scope="col">Colpi precedente</th>
+                <th scope="col">Primo Lv</th>
+                <th scope="col" title="HTK della build abilità 0, forza 10">Arma0 Forza10</th>
+                <th scope="col" title="HTK testa e terra della build precedente">Testa/terra prec.</th>
+                <th scope="col">Esito</th>
+              </tr>
+            </thead>
+            <tbody id="rpgAudit"></tbody>
+          </table>
+        </div>
+
+        <p class="rpg-hint">Esito: <strong>ingresso</strong> = colpi ≤ soglia d’ingresso; <strong>muro</strong> = build precedente ≥ soglia sotto livello. «Primo Lv» = livello minimo che centra l’ingresso alla forza dell’obiettivo.</p>
+      </section>
+
+      <section class="rpg-notes" aria-labelledby="rpgGuideTitle">
+        <h3 id="rpgGuideTitle">Come si legge il lab</h3>
+        <p class="rpg-notes-dynamic" id="rpgNotes">Diagnostica del progetto: escursione delle curve, tenuta degli scalini e avvisi.</p>
+        <ul class="rpg-notes-list">
+          <li><strong>Prima gli obiettivi.</strong> Senza build d’ingresso chiare l’audit non dice nulla: compila la tabella, poi calibra.</li>
+          <li><strong>Forza iniziale.</strong> Se abilità 0 / forza 10 salta un tier, verifica il rapporto della forza e il danno iniziale complessivo. Abbassare il tier da solo penalizza anche la build prevista.</li>
+          <li><strong>Soglie d’esempio.</strong> Ingresso ≤ 3 colpi e build precedente ≥ 8 colpi sono numeri di partenza: alzare il muro rende lo scalino più ripido.</li>
+          <li><strong>Non solo corpo.</strong> Controlla testa e terra della build precedente: se restano one-shot, lo scalino si salta comunque.</li>
+          <li><strong>Una variabile per volta.</strong> Ripeti l’audit con l’arma più forte della categoria; fucili e stomp seguono regole proprie e vanno valutati a parte.</li>
+          <li><strong>XP ≠ rapporti di danno.</strong> Ritardare l’XP sposta nel tempo l’accesso ai tier, non cambia i colpi necessari né il salto di potenza.</li>
+        </ul>
+      </section>
+    </section>
+
+    <section class="analysis-workspace">
+
+    <section class="stage-card" id="stageCard">
+      <div class="stage-header">
+        <div class="stage-title-group">
+          <h2 id="stageTitle">Progressione per tier — danno, HTK e power level</h2>
+          <p class="stage-subtitle" id="stageSubtitle">Curve per livello abilità (0 → 10) sulla zona selezionata: HTK atteso, danno medio e critici</p>
+        </div>
+
+        <div id="stageHeaderControls">
+          <div class="ribbon-chips" id="floorScaleToggleGroup" role="group" aria-label="Scala danno a terra">
+            <button class="chip active" id="btnScaleStandard">A terra standard (5x)</button>
+            <button class="chip" id="btnScaleOverkill">Combo testa a terra (15x overkill)</button>
+          </div>
+
+          <div class="ribbon-group" id="hordeControlsGroup" style="display: none;">
+            <label class="ribbon-label" for="sliderHordeSize">Dimensione orda</label>
+            <input type="range" id="sliderHordeSize" min="5" max="40" step="5" value="15" aria-label="Dimensione orda (zombie)">
+            <span class="num lever-val" id="valHordeSizeText">15 zed</span>
+
+            <span class="ribbon-label">Tattica</span>
+            <div class="ribbon-chips" id="tacticChips" role="group" aria-label="Tattica di scontro">
+              <button class="chip active" data-tactic="standing">In piedi</button>
+              <button class="chip" data-tactic="shove_stomp">Spinta + terra</button>
+              <button class="chip" data-tactic="headshot">Headshot</button>
+            </div>
+          </div>
+
+          <div class="stage-legend" id="stageLegend">
+            <div class="legend-item"><div class="legend-swatch pat-body"></div><span>Corpo ottimale</span></div>
+            <div class="legend-item"><div class="legend-swatch pat-head"></div><span>Colpo testa (3.0x)</span></div>
+            <div class="legend-item"><div class="legend-swatch pat-floor"></div><span id="legendFloorText">A terra (5.0x)</span></div>
+            <div class="legend-item"><div class="legend-swatch pat-exerted"></div><span>Fatica (−50%)</span></div>
+            <div class="legend-item"><div class="legend-swatch pat-exhausted"></div><span>Esausto (−95%)</span></div>
+            <div class="legend-item"><div class="legend-swatch pat-zombie"></div><span id="legendZombieHP">Zombie HP (1.95)</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="zone-controls" id="zoneControls" hidden>
+        <div class="zone-control">
+          <label class="zone-control-label" for="zoneMetric">Metrica</label>
+          <select id="zoneMetric" class="ribbon-select">
+            <option value="htk" selected>Colpi per uccidere</option>
+            <option value="damage">Danno medio</option>
+            <option value="power">Efficienza vs target</option>
+            <option value="stamina">Fiato / eliminazione</option>
+          </select>
+        </div>
+
+        <div class="zone-control">
+          <label class="zone-control-label" for="zoneTarget">Bersaglio</label>
+          <select id="zoneTarget" class="ribbon-select">
+            <option value="shambler" selected>Shambler</option>
+            <option value="sprinter">Sprinter</option>
+          </select>
+        </div>
+
+        <div class="zone-control">
+          <label class="zone-control-label" for="zoneHit">Colpo</label>
+          <select id="zoneHit" class="ribbon-select">
+            <option value="body" selected>Corpo</option>
+            <option value="head">Testa</option>
+            <option value="floor">A terra</option>
+          </select>
+        </div>
+
+        <div class="zone-control">
+          <label class="zone-control-label" for="zoneFatigue">Fatica</label>
+          <select id="zoneFatigue" class="ribbon-select">
+            <option value="0" selected>Riposato</option>
+            <option value="1">Fatica Lv 1 (−50%)</option>
+            <option value="4">Esausto Lv 4 (−95%)</option>
+          </select>
+        </div>
+
+        <label class="zone-toggle" for="zoneCritical">
+          <input type="checkbox" id="zoneCritical" checked>
+          <span>Critici attivi</span>
+        </label>
+
+        <label class="zone-toggle" for="zoneCompare">
+          <input type="checkbox" id="zoneCompare">
+          <span>Mostra riferimento</span>
+        </label>
+
+        <label class="zone-toggle" for="zoneLog" title="Comprime i grandi divari usando log(1+y); mantiene visibile anche lo zero">
+          <input type="checkbox" id="zoneLog">
+          <span>Scala log (1+y)</span>
+        </label>
+
+        <button type="button" class="chip zone-baseline-btn" id="btnCaptureBaseline">Fissa riferimento</button>
+      </div>
+
+      <div class="canvas-wrapper">
+        <canvas id="mainCanvas" role="img" aria-label="Grafico progressione danno, HTK e power level per livello abilità e tier"></canvas>
+        <div class="chart-tooltip" id="chartTooltip" style="display: none;"></div>
+      </div>
+
+      <div class="zone-selection" id="zoneSelection"></div>
+      <p class="fitness-note" id="fitnessNote">Forma fisica: incide sul fiato consumato per colpo, non sul danno inflitto.</p>
+      <p class="zone-note" id="zoneChartNote"></p>
+    </section>
+
+    <aside class="tuning-rail" id="tuningRail" aria-label="Leve di bilanciamento">
+      <div class="rail-head">
+        <div class="rail-head-text">
+          <h3 id="panelRightTitle">Leve di ribilanciamento &amp; modding</h3>
+          <span class="brand-desc" id="panelRightSub">Regola le leve del motore Java per testare le curve in tempo reale</span>
+        </div>
+        <button class="chip rail-reset" id="btnResetVanilla">Ripristina vanilla</button>
+      </div>
+
+      <div class="tzonyne-levers" id="tzonyneLevers" style="display: none;">
+        <div class="lever-group-head">
+          <h4 class="lever-group-title" id="tierLeverHeading">Parametri del tier selezionato</h4>
+          <div class="ribbon-chips tier-chips" id="tierChips" role="group" aria-label="Tier TZonyne selezionato">
+            <button class="chip active" data-tier="1">T1</button>
+            <button class="chip" data-tier="2">T2</button>
+            <button class="chip" data-tier="3">T3</button>
+            <button class="chip" data-tier="4">T4</button>
+            <button class="chip" data-tier="5">T5</button>
+            <button class="chip" data-tier="6">T6</button>
+          </div>
+          <p class="lever-group-sub">Danno, crit e sprinter valgono <strong>solo per il tier selezionato</strong>; HP zombie e budget colpi sono <strong>globali</strong>.</p>
+        </div>
+
+        <div class="rail-lever-grid">
+          <div class="lever-item">
+            <div class="lever-label-row">
+              <label class="lever-label" for="sliderTzDmg">Danno arma</label>
+              <span class="lever-val" id="valTzDmg">1.00x</span>
+            </div>
+            <input type="range" id="sliderTzDmg" min="0.01" max="1.20" step="0.01" value="1.00" aria-label="Moltiplicatore danno arma del tier selezionato">
+          </div>
+          <div class="lever-item">
+            <div class="lever-label-row">
+              <label class="lever-label" for="sliderTzCritRate">Crit rate</label>
+              <span class="lever-val" id="valTzCritRate">1.00x</span>
+            </div>
+            <input type="range" id="sliderTzCritRate" min="0.01" max="1.20" step="0.01" value="1.00" aria-label="Moltiplicatore crit rate del tier selezionato">
+          </div>
+          <div class="lever-item">
+            <div class="lever-label-row">
+              <label class="lever-label" for="sliderTzCritMulti">Crit multiplier</label>
+              <span class="lever-val" id="valTzCritMulti">1.00x</span>
+            </div>
+            <input type="range" id="sliderTzCritMulti" min="0.01" max="1.20" step="0.01" value="1.00" aria-label="Moltiplicatore danno critico del tier selezionato">
+          </div>
+          <div class="lever-item">
+            <div class="lever-label-row">
+              <label class="lever-label" for="sliderTzSprinter">Sprinter %</label>
+              <span class="lever-val" id="valTzSprinter">0%</span>
+            </div>
+            <input type="range" id="sliderTzSprinter" min="0" max="100" step="1" value="0" aria-label="Percentuale di sprinter nella zona del tier selezionato">
+          </div>
+          <div class="lever-item lever-item--wide">
+            <div class="lever-label-row">
+              <label class="lever-label" for="sliderTzShamblerHP">HP shambler / sprinter (globali)</label>
+              <span class="lever-val" id="valTzHP">2.0 / 0.1</span>
+            </div>
+            <div class="lever-pair">
+              <span class="lever-pair-tag" aria-hidden="true" title="Shambler">Sh</span>
+              <input type="range" id="sliderTzShamblerHP" min="0.5" max="6" step="0.1" value="2.0" aria-label="HP shambler, globale su tutte le zone">
+            </div>
+            <div class="lever-pair">
+              <span class="lever-pair-tag" aria-hidden="true" title="Sprinter">Sp</span>
+              <input type="range" id="sliderTzSprinterHP" min="0.05" max="2" step="0.05" value="0.1" aria-label="HP sprinter, globale su tutte le zone">
+            </div>
+          </div>
+          <div class="lever-item lever-item--wide">
+            <div class="lever-label-row">
+              <label class="lever-label" for="sliderTzTarget">Budget colpi di riferimento (globale)</label>
+              <span class="lever-val" id="valTzTarget">3 colpi</span>
+            </div>
+            <input type="range" id="sliderTzTarget" min="1" max="6" step="1" value="3" aria-label="Budget colpi di riferimento, globale su tutte le zone">
+          </div>
+        </div>
+
+        <button class="chip rail-action" id="btnResetTZonyne">Reset TZonyne sandbox</button>
+      </div>
+
+      <div class="lever-grid" id="leverGrid">
+        <h4 class="lever-group-title">Bilanciamento Java · globale</h4>
+        <div class="lever-item">
+          <div class="lever-label-row">
+            <label class="lever-label" for="sliderFloorMult">Min. danno a terra</label>
+            <span class="lever-val" id="valFloorMult">5.0x (Vanilla)</span>
+          </div>
+          <input type="range" id="sliderFloorMult" min="1.0" max="6.0" step="0.2" value="5.0" aria-label="Moltiplicatore minimo danno a terra">
+        </div>
+
+        <div class="lever-item">
+          <div class="lever-label-row">
+            <label class="lever-label" for="sliderHeadMult">Bonus danno testa</label>
+            <span class="lever-val" id="valHeadMult">3.0x (Vanilla)</span>
+          </div>
+          <input type="range" id="sliderHeadMult" min="1.0" max="4.0" step="0.1" value="3.0" aria-label="Moltiplicatore danno alla testa">
+        </div>
+
+        <div class="lever-item">
+          <div class="lever-label-row">
+            <label class="lever-label" for="sliderSkillIncr">Danno / livello</label>
+            <span class="lever-val" id="valSkillIncr">0.10 (+10% / lv)</span>
+          </div>
+          <input type="range" id="sliderSkillIncr" min="0.02" max="0.20" step="0.01" value="0.10" aria-label="Incremento danno per livello abilità">
+        </div>
+
+        <div class="lever-item">
+          <div class="lever-label-row">
+            <label class="lever-label" for="sliderWearScale">Usura / logorio</label>
+            <span class="lever-val" id="valWearScale">1.0x (Vanilla)</span>
+          </div>
+          <input type="range" id="sliderWearScale" min="0.5" max="4.0" step="0.25" value="1.0" aria-label="Moltiplicatore usura e logorio">
+        </div>
+      </div>
+    </aside>
+
+    </section>
+
+    <div class="cut" aria-hidden="true"></div>
+
+    <section class="dual-section" id="lowerSection">
+
+      <div class="table-panel">
+        <div class="panel-head">
+          <h3 id="panelTableTitle">Matrice per livello abilità</h3>
+          <span class="brand-desc" id="panelTableSub">Clicca su una riga per analizzare quel livello specifico</span>
+        </div>
+        <div class="table-scroll">
+          <table class="dense-table" id="denseTable">
+            <thead>
+              <tr id="tableHeadRow">
+                <th scope="col">Livello</th>
+                <th scope="col">Corpo (Roll)</th>
+                <th scope="col">Headshot</th>
+                <th scope="col">A Terra</th>
+                <th scope="col">Fatica (−50%)</th>
+                <th scope="col">HTK Corpo</th>
+                <th scope="col">HTK Testa</th>
+                <th scope="col">HTK Terra</th>
+                <th scope="col">Zombie Kills</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="levers-panel detail-panel">
+        <div class="tactical-card">
+          <div class="tac-head">
+            <span class="tac-title" id="tacCardTitle">Analisi tattica &amp; consumo fiato (livello selezionato)</span>
+            <span class="num tac-level" id="tacticalLevelTag">Livello 3</span>
+          </div>
+
+          <div class="tac-grid">
+            <div class="tac-metric">
+              <span class="tac-label" id="lblTacMetric1">Consumo fiato / swing</span>
+              <span class="num tac-val" id="tacStaminaCost">0.0101</span>
+              <span class="tac-sub" id="subTacMetric1">Su 1.0 stamina max</span>
+            </div>
+
+            <div class="tac-metric">
+              <span class="tac-label" id="lblTacMetric2">Swings prima del fiatone</span>
+              <span class="num tac-val tac-val--exerted" id="tacSwingsToExertion">~24 colpi</span>
+              <span class="tac-sub" id="subTacMetric2">Prima di Exertion Lv 1 (−50%)</span>
+            </div>
+
+            <div class="tac-metric">
+              <span class="tac-label" id="lblTacMetric3">Time To Kill (TTK)</span>
+              <span class="num tac-val tac-val--head" id="tacTTK">~3.6 sec</span>
+              <span class="tac-sub" id="subTacMetric3">Ciclo stimato da animazione, non SwingTime script</span>
+            </div>
+          </div>
+
+          <p class="tac-summary" id="tacSummaryText">
+            Caricamento analisi tattica...
+          </p>
+        </div>
+
+        <div class="heatmap-card" id="heatmapCard" style="display: none;">
+          <div class="formula-head">
+            <span>Heatmap corpo fresco · Skill × Forza (zona selezionata)</span>
+            <span class="num" id="heatmapLegend">hatch = fuori budget</span>
+          </div>
+          <canvas id="heatmapCanvas"></canvas>
+          <p class="formula-note" id="heatmapNote">Clicca una cella per impostare Skill e Forza. Tinta + tratteggio = HTK atteso vs shambler della zona.</p>
+        </div>
+
+        <div class="formula-card" id="formulaCard">
+          <div class="formula-head">
+            <span>Pipeline danno (Java B42.20)</span>
+            <span class="num" id="formulaResult">—</span>
+          </div>
+          <ol class="formula-steps" id="formulaSteps"></ol>
+          <p class="formula-note" id="formulaNote"></p>
+        </div>
+
+      </div>
+
+    </section>
+
+    <div class="cut" aria-hidden="true"></div>
+
+    <section class="insight-grid legacy-grid" id="legacyMetrics">
+      <h2 class="section-kicker">Indicatori livello selezionato</h2>
+
+      <div class="insight-card">
+        <div class="insight-meta">
+          <span class="insight-label">Danno base (corpo)</span>
+          <span class="insight-tag" id="tagDmgPct">43% Zombie HP</span>
+        </div>
+        <div class="insight-val-row">
+          <span class="insight-val" id="kpiDmg">0.83</span>
+          <span class="insight-unit">HP</span>
+        </div>
+        <span class="insight-sub" id="kpiDmgRange">Range roll: 0.48 - 1.19 HP</span>
+      </div>
+
+      <div class="insight-card">
+        <div class="insight-meta">
+          <span class="insight-label">Hits To Kill (HTK)</span>
+          <span class="insight-tag" id="tagHTK">1 testa | 1 terra</span>
+        </div>
+        <div class="insight-val-row">
+          <span class="insight-val" id="kpiHTK">3</span>
+          <span class="insight-unit">colpi al corpo</span>
+        </div>
+          <span class="insight-sub" id="kpiHTKSub">vs Normal (1.95 HP) | Crit: 1 colpo | Atteso con crit: 2.4</span>
+      </div>
+
+      <div class="insight-card">
+        <div class="insight-meta">
+          <span class="insight-label">Longevità arma</span>
+          <span class="insight-tag" id="tagDurability">1 in 38 usura</span>
+        </div>
+        <div class="insight-val-row">
+          <span class="insight-val" id="kpiHits">494</span>
+          <span class="insight-unit">colpi totali</span>
+        </div>
+        <span class="insight-sub" id="kpiKills">~165 zombie eliminati (colpi al corpo)</span>
+      </div>
+
+      <div class="insight-card">
+        <div class="insight-meta">
+          <span class="insight-label">Valutazione power level</span>
+          <span class="insight-tag" id="tagPowerLevel">Eccessivo (OP)</span>
+        </div>
+        <div class="insight-val-row">
+          <span class="insight-val" id="kpiPowerScore">ELEVATO</span>
+        </div>
+        <span class="insight-sub" id="kpiPowerDesc">One-shot a terra garantito</span>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="data.js"></script>
+  <script src="combat_engine.js"></script>
+  <script src="progression_lab.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
