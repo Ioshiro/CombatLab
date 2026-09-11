@@ -44,8 +44,8 @@
   --figure-median: #e0b03a;
   --figure-alarm: #f08a78;
   --font: "IBM Plex Mono", ui-monospace, monospace;
-  --gap-block: 2.75rem;
-  --sheet-pad: 1.1rem 1.25rem;
+  --gap-block: 1.35rem;
+  --sheet-pad: 0.85rem 1rem;
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
   --bg-app: var(--ground);
   --bg-surface: var(--paper);
@@ -120,6 +120,15 @@ button {
 }
 
 button:hover:not(:disabled) { border-color: var(--amber); color: var(--amber); }
+.pressed:hover,
+button[aria-pressed="true"]:hover,
+.chip.active:hover,
+.view-btn.active:hover,
+.zone-cell[aria-pressed="true"]:hover,
+.zone-trace[aria-pressed="true"]:hover,
+.rpg-launch[aria-expanded="true"]:hover {
+  color: var(--ground);
+}
 button:disabled { color: var(--ghost); border-color: var(--ghost); cursor: not-allowed; }
 
 .pressed,
@@ -176,7 +185,7 @@ h1, h2, h3, h4 {
   color: var(--ink);
 }
 
-h1 { font-size: 1.35rem; line-height: 1.2; }
+h1 { font-size: 1.7rem; line-height: 1.15; }
 h2 { font-size: 0.95rem; margin-top: 0.2rem; }
 h3 { font-size: 0.82rem; }
 h4 { font-size: 0.75rem; }
@@ -247,9 +256,10 @@ p { margin: 0 0 0.75rem; max-width: 72ch; }
 }
 
 .terminal {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 1.25rem 1.1rem 3rem;
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  padding: 0.85rem 1.35rem 2rem;
 }
 
 .header-bar {
@@ -283,7 +293,7 @@ p { margin: 0 0 0.75rem; max-width: 72ch; }
 }
 
 .brand-title {
-  font-size: 1.35rem;
+  font-size: 1.7rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: -0.03em;
@@ -460,7 +470,7 @@ p { margin: 0 0 0.75rem; max-width: 72ch; }
 
 @media (min-width: 1100px) {
   .analysis-workspace {
-    grid-template-columns: minmax(0, 1fr) 360px;
+    grid-template-columns: minmax(0, 1fr) 300px;
   }
 }
 
@@ -496,9 +506,10 @@ p { margin: 0 0 0.75rem; max-width: 72ch; }
 
 .canvas-wrapper {
   position: relative;
-  height: 420px;
+  height: min(58vh, 640px);
+  min-height: 420px;
   min-width: 0;
-  overflow: auto;
+  overflow: hidden;
   background: var(--ground);
 }
 
@@ -554,13 +565,20 @@ p { margin: 0 0 0.75rem; max-width: 72ch; }
   gap: 1rem;
 }
 
-@media (min-width: 1100px) {
-  .dual-section { grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.9fr); }
+@media (min-width: 1280px) {
+  .dual-section {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.95fr);
+    align-items: stretch;
+  }
+  body[data-view="zones"] .dual-section {
+    grid-template-columns: minmax(0, 1.1fr) minmax(340px, 0.9fr) minmax(0, 0.95fr);
+  }
 }
 
 .table-panel, .levers-panel { min-width: 0; display: flex; flex-direction: column; gap: 12px; }
 .panel-head { display: flex; flex-direction: column; gap: 2px; margin-bottom: 0.4rem; }
-.table-scroll { overflow: auto; max-height: 440px; }
+.table-scroll { overflow: auto; max-height: min(62vh, 640px); }
+.heatmap-card { min-height: 420px; }
 
 table.dense-table, table.data, .rpg-table {
   width: 100%;
@@ -624,8 +642,9 @@ table.dense-table tr.selected td {
   content: "";
   width: 0.7rem;
   height: 0.7rem;
-  border: 1px solid currentColor;
-  background: repeating-linear-gradient(var(--trace-angle, 45deg), currentColor, currentColor 1px, transparent 1px, transparent 3px);
+  border: 1px solid var(--trace-color, currentColor);
+  background-color: var(--trace-color, currentColor);
+  background-image: repeating-linear-gradient(var(--trace-angle, 45deg), rgba(12,15,12,0.35), rgba(12,15,12,0.35) 1px, transparent 1px, transparent 3px);
 }
 
 .chart-tooltip {
@@ -721,8 +740,40 @@ body[data-view="zones"] .insight-grid { display: none; }
   margin-bottom: 8px;
 }
 
-.formula-steps { margin: 0; padding-left: 1.2rem; font-size: 12px; color: var(--ink); }
-.heatmap-card canvas { width: 100% !important; height: 220px !important; background: var(--ground); }
+.formula-steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+  color: var(--ink);
+}
+.formula-steps li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  padding: 0.18rem 0;
+  border-bottom: 1px solid var(--line);
+}
+.heatmap-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+.heatmap-card[hidden] { display: none !important; }
+.heatmap-plot {
+  flex: 1 1 auto;
+  min-height: 380px;
+  background: var(--ground);
+}
+.heatmap-card canvas,
+.heatmap-plot canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 380px;
+  background: var(--ground);
+}
 
 input[type="range"] {
   -webkit-appearance: none;
@@ -818,16 +869,17 @@ input[type="checkbox"] { accent-color: var(--amber); width: 14px; height: 14px; 
 
 .tzonyne-levers { display: flex; flex-direction: column; gap: 10px; }
 
-@media (max-width: 1180px) {
+@media (max-width: 1279px) {
   .insight-grid { grid-template-columns: repeat(2, 1fr); }
   .dual-section { grid-template-columns: 1fr; }
-  .canvas-wrapper { height: 400px; }
+  .heatmap-plot, .heatmap-card canvas { min-height: 420px; }
 }
 
 @media (max-width: 720px) {
-  .terminal { padding: 0.9rem 0.75rem 2.4rem; }
+  .terminal { padding: 0.7rem 0.7rem 1.8rem; }
   h1, .brand-title { font-size: 1.1rem; }
-  .canvas-wrapper { height: 300px; }
+  .canvas-wrapper { height: 320px; min-height: 280px; }
+  .heatmap-plot, .heatmap-card canvas { min-height: 300px; }
   .insight-grid { grid-template-columns: 1fr; }
   .table-scroll { max-height: 320px; }
   .table-scroll:has(.zone-cell) table.dense-table { min-width: 0; font-size: 11px; }

@@ -3,16 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Knox AEBS — sector combat.balance</title>
+  <title>Combat.balance — Knox AEBS</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="terminal">
 
   <header class="header-bar">
     <div class="brand-group">
-      <p class="mast-meta">Knox County AEBS · Build 42.20 · sector combat.balance</p>
-      <h1 class="brand-title">Knox AEBS — sector combat.balance</h1>
-      <span class="brand-desc">Danno, HTK e power level per zona · modello dal decompilato Java e dagli scripts. Stime, non DPS in-game.</span>
+      <h1 class="brand-title">Combat.balance</h1>
+      <span class="brand-desc">Knox AEBS · B42.20 · stime Java, non DPS in-game</span>
     </div>
 
     <div class="header-controls">
@@ -21,23 +20,23 @@
         <select id="presetSelect" class="preset-select">
           <option value="la_resistenza" selected>La Resistenza (TZonyne)</option>
           <option value="vanilla_apocalypse">Vanilla B42 (Apocalypse)</option>
-          <option value="vanilla_multihit">Vanilla B42 (Survivor - MultiHit ON)</option>
-          <option value="tough_zombies">Vanilla Zombie Tough (3.65 HP)</option>
-          <option value="rebalance_hardcore">Proposta: Gritty Survival</option>
-          <option value="rebalance_endurance_focus">Proposta: Attrito & Usura</option>
+          <option value="vanilla_multihit">Vanilla B42 (Survivor · MultiHit)</option>
+          <option value="tough_zombies">Vanilla Tough (3.65 HP)</option>
+          <option value="rebalance_hardcore">Gritty Survival</option>
+          <option value="rebalance_endurance_focus">Attrito &amp; usura</option>
         </select>
       </div>
 
       <nav class="view-modes" aria-label="Viste di analisi">
-        <button class="view-btn cue-btn active" data-view="zones"><i class="cue-pat" aria-hidden="true"></i>Progressione per tier</button>
-        <button class="view-btn cue-btn" data-view="single"><i class="cue-pat" aria-hidden="true"></i>Analisi singola</button>
-        <button class="view-btn cue-btn" data-view="multi"><i class="cue-pat" aria-hidden="true"></i>Confronto armi</button>
-        <button class="view-btn cue-btn" data-view="diff"><i class="cue-pat" aria-hidden="true"></i>Diff vanilla vs mod</button>
-        <button class="view-btn cue-btn" data-view="horde"><i class="cue-pat" aria-hidden="true"></i>Orda &amp; fiato</button>
-        <button class="view-btn cue-btn" data-view="radar"><i class="cue-pat" aria-hidden="true"></i>Radar &amp; stun-lock</button>
+        <button class="view-btn cue-btn active" data-view="zones"><i class="cue-pat" aria-hidden="true"></i>Tier</button>
+        <button class="view-btn cue-btn" data-view="single"><i class="cue-pat" aria-hidden="true"></i>Singola</button>
+        <button class="view-btn cue-btn" data-view="multi"><i class="cue-pat" aria-hidden="true"></i>Confronto</button>
+        <button class="view-btn cue-btn" data-view="diff"><i class="cue-pat" aria-hidden="true"></i>Diff</button>
+        <button class="view-btn cue-btn" data-view="horde"><i class="cue-pat" aria-hidden="true"></i>Orda</button>
+        <button class="view-btn cue-btn" data-view="radar"><i class="cue-pat" aria-hidden="true"></i>Radar</button>
       </nav>
 
-      <button type="button" class="rpg-launch" id="rpgLaunch" aria-expanded="false" aria-controls="rpgPanel" title="Apre il laboratorio opzionale di progressione RPG: obiettivi per tier, curve ipotetiche e audit delle soglie">Laboratorio RPG</button>
+      <button type="button" class="rpg-launch" id="rpgLaunch" aria-expanded="false" aria-controls="rpgPanel" title="Laboratorio RPG: obiettivi per tier e audit delle soglie">RPG</button>
     </div>
   </header>
 
@@ -136,47 +135,35 @@
     <section class="rpg-panel" id="rpgPanel" hidden aria-labelledby="rpgPanelTitle">
       <div class="rpg-head">
         <div class="rpg-title-group">
-          <h2 id="rpgPanelTitle">RPG Progression Lab</h2>
-          <p class="rpg-subtitle">Build d’ingresso per T1 → T6, curve danno ipotetiche e audit delle soglie di colpi: verifica se gli scalini tra tier tengono prima di toccare il motore.</p>
+          <h2 id="rpgPanelTitle">RPG lab</h2>
+          <p class="rpg-subtitle">Ipotesi di lavoro: soglie morbide, non Vanilla né TZonyne. Il modello resta Java/script.</p>
         </div>
-        <div class="rpg-head-flags">
-          <span class="rpg-flag">Simulazione personalizzata</span>
-          <span class="rpg-flag rpg-flag--muted">Non Vanilla · non mod</span>
-        </div>
+        <span class="rpg-flag">Non Vanilla · non mod</span>
       </div>
 
-      <p class="rpg-caveat">Il modello di danno resta quello ricavato dal decompilato Java e dagli script. Obiettivi, curve e costanti di questo laboratorio sono <strong>ipotesi di lavoro</strong>: servono a testare scalini ripidi, non descrivono Vanilla né il preset TZonyne.</p>
-
-      <p class="rpg-status" id="rpgStatus" role="status">Pronto: compila la build d’ingresso di ogni tier, poi usa «Calibra danno dei tier».</p>
+      <p class="rpg-status" id="rpgStatus" role="status">Compila le build d’ingresso, poi calibra.</p>
 
       <div class="rpg-toolbar" role="group" aria-label="Azioni del laboratorio">
-        <button type="button" class="chip rpg-btn" id="rpgProposal" title="Riempe le curve con una progressione geometrica tra base e tetto">Proponi curva geometrica</button>
-        <button type="button" class="chip rpg-btn" id="rpgLinear" title="Svuota le curve e torna alla formula originale del motore">Ripristina curve originali</button>
-        <button type="button" class="chip rpg-btn rpg-btn--accent" id="rpgCalibrate" title="Cerca il moltiplicatore danno minimo per tier che rispetta il target di colpi in ingresso dell'arma selezionata">Calibra danno dei tier</button>
-        <button type="button" class="chip rpg-btn" id="rpgExport" title="Scarica obiettivi, curve e parametri per riprodurre il progetto">Esporta progetto JSON</button>
+        <button type="button" class="chip rpg-btn" id="rpgProposal" title="Progressione geometrica tra base e tetto; forza 0.85× → 1.10×">Curva geometrica</button>
+        <button type="button" class="chip rpg-btn" id="rpgLinear" title="Torna alla formula originale del motore">Curve originali</button>
+        <button type="button" class="chip rpg-btn rpg-btn--accent" id="rpgCalibrate" title="Moltiplicatore danno minimo per centrare i colpi d’ingresso">Calibra tier</button>
+        <button type="button" class="chip rpg-btn" id="rpgExport" title="Scarica obiettivi, curve e parametri">Esporta JSON</button>
       </div>
-
-      <p class="rpg-hint">«Proponi curva geometrica» genera i fattori arma tra base e tetto scelti (esempio iniziale: <strong>0.3× → 72.9×</strong>) e imposta la forza a <strong>0.85× → 1.10×</strong>, riducendo il vantaggio iniziale. Tutte le 11 righe restano modificabili; non ricalibra automaticamente i tier.</p>
-
-      <p class="rpg-callout"><strong>Sono soglie morbide di efficienza, non blocchi d’accesso:</strong> con danno positivo restano possibili kiting, gruppo e molti colpi. Un requisito rigido richiede una regola dedicata nella mod.</p>
 
       <div class="rpg-grid">
         <section class="rpg-card" aria-labelledby="rpgGoalsTitle">
           <div class="rpg-card-head">
-            <h3 id="rpgGoalsTitle">Build d’ingresso per tier</h3>
-            <p class="rpg-card-sub">Una riga per tier: abilità e forza attese quando il giocatore entra nella zona. Sono il metro dell’audit, non un vincolo di gioco.</p>
+            <h3 id="rpgGoalsTitle">Build d’ingresso</h3>
           </div>
 
           <div class="rpg-targets">
             <div class="rpg-field">
-              <label for="rpgEntryHtk">Colpi ammessi in ingresso</label>
-              <input type="number" id="rpgEntryHtk" value="3" min="1" max="10" step="0.5" inputmode="decimal" aria-describedby="rpgEntryHtkHint">
-              <span class="rpg-field-hint" id="rpgEntryHtkHint">Corpo fresco. Esempio: 3 colpi = ingresso «ok».</span>
+              <label for="rpgEntryHtk">Colpi ingresso</label>
+              <input type="number" id="rpgEntryHtk" value="3" min="1" max="10" step="0.5" inputmode="decimal" title="Corpo fresco. 3 = ingresso ok">
             </div>
             <div class="rpg-field">
-              <label for="rpgBlockedHtk">Colpi minimi sotto livello</label>
-              <input type="number" id="rpgBlockedHtk" value="8" min="2" max="100" step="1" inputmode="numeric" aria-describedby="rpgBlockedHtkHint">
-              <span class="rpg-field-hint" id="rpgBlockedHtkHint">Muro. Esempio: 8 colpi per la build precedente.</span>
+              <label for="rpgBlockedHtk">Muro sotto livello</label>
+              <input type="number" id="rpgBlockedHtk" value="8" min="2" max="100" step="1" inputmode="numeric" title="Colpi minimi della build precedente">
             </div>
           </div>
 
@@ -193,7 +180,7 @@
             </table>
           </div>
 
-          <p class="rpg-hint">Queste build sono obiettivi di progetto, non requisiti imposti dal motore. Confronta sempre <strong>abilità 0 / forza 10</strong> con la build prevista: la forza iniziale non dovrebbe sbloccare da sola il tier successivo.</p>
+          <p class="rpg-hint">Obiettivi di progetto. Abilità 0 / forza 10 non deve sbloccare il tier successivo.</p>
         </section>
 
         <section class="rpg-card" aria-labelledby="rpgCurveTitle">
@@ -205,7 +192,7 @@
                 <span>Curve attive</span>
               </label>
             </div>
-            <p class="rpg-card-sub">Fattori per livello abilità (arma) e per punto forza. Casella spenta = formula originale del motore, nessuna curva applicata.</p>
+            <p class="rpg-card-sub">Spento = formula originale del motore.</p>
           </div>
 
           <div class="table-scroll rpg-scroll rpg-scroll--curve">
@@ -240,14 +227,14 @@
             </div>
           </div>
 
-          <p class="rpg-hint">Base e tetto generano la curva geometrica. Il fattore globale scala il danno di mischia; la base lineare vale solo a curve spente. Disattivare le curve non ripristina i moltiplicatori dei tier: ricalibra o usa Reset TZonyne.</p>
+          <p class="rpg-hint">Globale scala la mischia. Curve off non resetta i moltiplicatori: ricalibra o Reset TZonyne.</p>
         </section>
       </div>
 
       <section class="rpg-card rpg-card--audit" aria-labelledby="rpgAuditTitle">
         <div class="rpg-card-head">
           <h3 id="rpgAuditTitle">Audit delle soglie per tier</h3>
-          <p class="rpg-card-sub">Colpi della build d’ingresso e della build precedente sull’arma selezionata (corpo fresco). «Calibra danno dei tier» muove <strong>solo il danno del tier</strong> per centrare l’ingresso: non garantisce il muro e non tocca critici o mix di zombie. Fucili e stomp non si calibrano dal danno dei tier.</p>
+          <p class="rpg-card-sub">Corpo fresco, arma selezionata. Calibra muove solo il danno del tier. Fucili/stomp esclusi.</p>
         </div>
 
         <div class="table-scroll rpg-scroll">
@@ -268,21 +255,10 @@
           </table>
         </div>
 
-        <p class="rpg-hint">Esito: <strong>ingresso</strong> = colpi ≤ soglia d’ingresso; <strong>muro</strong> = build precedente ≥ soglia sotto livello. «Primo Lv» = livello minimo che centra l’ingresso alla forza dell’obiettivo.</p>
+        <p class="rpg-hint">Ingresso ≤ soglia · muro = precedente ≥ sotto-livello · Primo Lv = livello minimo all’ingresso.</p>
       </section>
 
-      <section class="rpg-notes" aria-labelledby="rpgGuideTitle">
-        <h3 id="rpgGuideTitle">Come si legge il lab</h3>
-        <p class="rpg-notes-dynamic" id="rpgNotes">Diagnostica del progetto: escursione delle curve, tenuta degli scalini e avvisi.</p>
-        <ul class="rpg-notes-list">
-          <li><strong>Prima gli obiettivi.</strong> Senza build d’ingresso chiare l’audit non dice nulla: compila la tabella, poi calibra.</li>
-          <li><strong>Forza iniziale.</strong> Se abilità 0 / forza 10 salta un tier, verifica il rapporto della forza e il danno iniziale complessivo. Abbassare il tier da solo penalizza anche la build prevista.</li>
-          <li><strong>Soglie d’esempio.</strong> Ingresso ≤ 3 colpi e build precedente ≥ 8 colpi sono numeri di partenza: alzare il muro rende lo scalino più ripido.</li>
-          <li><strong>Non solo corpo.</strong> Controlla testa e terra della build precedente: se restano one-shot, lo scalino si salta comunque.</li>
-          <li><strong>Una variabile per volta.</strong> Ripeti l’audit con l’arma più forte della categoria; fucili e stomp seguono regole proprie e vanno valutati a parte.</li>
-          <li><strong>XP ≠ rapporti di danno.</strong> Ritardare l’XP sposta nel tempo l’accesso ai tier, non cambia i colpi necessari né il salto di potenza.</li>
-        </ul>
-      </section>
+      <p class="rpg-notes-dynamic" id="rpgNotes">Diagnostica curve e scalini.</p>
     </section>
 
     <section class="analysis-workspace">
@@ -290,14 +266,14 @@
     <section class="stage-card" id="stageCard">
       <div class="stage-header">
         <div class="stage-title-group">
-          <h2 id="stageTitle">Progressione per tier — danno, HTK e power level</h2>
-          <p class="stage-subtitle" id="stageSubtitle">Curve per livello abilità (0 → 10) sulla zona selezionata: HTK atteso, danno medio e critici</p>
+          <h2 id="stageTitle">Progressione per tier</h2>
+          <p class="stage-subtitle" id="stageSubtitle">HTK, danno, critici · Lv 0–10</p>
         </div>
 
         <div id="stageHeaderControls">
           <div class="ribbon-chips" id="floorScaleToggleGroup" role="group" aria-label="Scala danno a terra">
-            <button class="chip active" id="btnScaleStandard">A terra standard (5x)</button>
-            <button class="chip" id="btnScaleOverkill">Combo testa a terra (15x overkill)</button>
+            <button class="chip active" id="btnScaleStandard">Terra 5×</button>
+            <button class="chip" id="btnScaleOverkill">Overkill 15×</button>
           </div>
 
           <div class="ribbon-group" id="hordeControlsGroup" style="display: none;">
@@ -314,12 +290,12 @@
           </div>
 
           <div class="stage-legend" id="stageLegend">
-            <div class="legend-item"><div class="legend-swatch pat-body"></div><span>Corpo ottimale</span></div>
-            <div class="legend-item"><div class="legend-swatch pat-head"></div><span>Colpo testa (3.0x)</span></div>
-            <div class="legend-item"><div class="legend-swatch pat-floor"></div><span id="legendFloorText">A terra (5.0x)</span></div>
-            <div class="legend-item"><div class="legend-swatch pat-exerted"></div><span>Fatica (−50%)</span></div>
-            <div class="legend-item"><div class="legend-swatch pat-exhausted"></div><span>Esausto (−95%)</span></div>
-            <div class="legend-item"><div class="legend-swatch pat-zombie"></div><span id="legendZombieHP">Zombie HP (1.95)</span></div>
+            <div class="legend-item"><div class="legend-swatch pat-body"></div><span>Corpo</span></div>
+            <div class="legend-item"><div class="legend-swatch pat-head"></div><span>Testa 3×</span></div>
+            <div class="legend-item"><div class="legend-swatch pat-floor"></div><span id="legendFloorText">Terra 5×</span></div>
+            <div class="legend-item"><div class="legend-swatch pat-exerted"></div><span>Fatica −50%</span></div>
+            <div class="legend-item"><div class="legend-swatch pat-exhausted"></div><span>Esausto −95%</span></div>
+            <div class="legend-item"><div class="legend-swatch pat-zombie"></div><span id="legendZombieHP">HP 1.95</span></div>
           </div>
         </div>
       </div>
@@ -385,15 +361,15 @@
       </div>
 
       <div class="zone-selection" id="zoneSelection"></div>
-      <p class="fitness-note" id="fitnessNote">Forma fisica: incide sul fiato consumato per colpo, non sul danno inflitto.</p>
+      <p class="fitness-note sr-only" id="fitnessNote">Forma fisica: incide sul fiato, non sul danno.</p>
       <p class="zone-note" id="zoneChartNote"></p>
     </section>
 
     <aside class="tuning-rail" id="tuningRail" aria-label="Leve di bilanciamento">
       <div class="rail-head">
         <div class="rail-head-text">
-          <h3 id="panelRightTitle">Leve di ribilanciamento &amp; modding</h3>
-          <span class="brand-desc" id="panelRightSub">Regola le leve del motore Java per testare le curve in tempo reale</span>
+          <h3 id="panelRightTitle">Leve</h3>
+          <span class="brand-desc" id="panelRightSub">Motore Java, in tempo reale</span>
         </div>
         <button class="chip rail-reset" id="btnResetVanilla">Ripristina vanilla</button>
       </div>
@@ -409,7 +385,7 @@
             <button class="chip" data-tier="5">T5</button>
             <button class="chip" data-tier="6">T6</button>
           </div>
-          <p class="lever-group-sub">Danno, crit e sprinter valgono <strong>solo per il tier selezionato</strong>; HP zombie e budget colpi sono <strong>globali</strong>.</p>
+          <p class="lever-group-sub">Danno/crit/sprinter: tier. HP e budget: globali.</p>
         </div>
 
         <div class="rail-lever-grid">
@@ -511,8 +487,8 @@
 
       <div class="table-panel">
         <div class="panel-head">
-          <h3 id="panelTableTitle">Matrice per livello abilità</h3>
-          <span class="brand-desc" id="panelTableSub">Clicca su una riga per analizzare quel livello specifico</span>
+          <h3 id="panelTableTitle">Matrice livello</h3>
+          <span class="brand-desc" id="panelTableSub">Clicca una cella</span>
         </div>
         <div class="table-scroll">
           <table class="dense-table" id="denseTable">
@@ -534,10 +510,21 @@
         </div>
       </div>
 
+      <div class="heatmap-card" id="heatmapCard" hidden>
+        <div class="formula-head">
+          <span>Skill × Forza</span>
+          <span class="num" id="heatmapLegend">hatch = fuori budget</span>
+        </div>
+        <div class="heatmap-plot">
+          <canvas id="heatmapCanvas" aria-label="Heatmap HTK: skill in orizzontale, forza in verticale"></canvas>
+        </div>
+        <p class="formula-note" id="heatmapNote">Clicca una cella: imposta Skill e Forza.</p>
+      </div>
+
       <div class="levers-panel detail-panel">
         <div class="tactical-card">
           <div class="tac-head">
-            <span class="tac-title" id="tacCardTitle">Analisi tattica &amp; consumo fiato (livello selezionato)</span>
+            <span class="tac-title" id="tacCardTitle">Tattica · fiato</span>
             <span class="num tac-level" id="tacticalLevelTag">Livello 3</span>
           </div>
 
@@ -566,15 +553,6 @@
           </p>
         </div>
 
-        <div class="heatmap-card" id="heatmapCard" style="display: none;">
-          <div class="formula-head">
-            <span>Heatmap corpo fresco · Skill × Forza (zona selezionata)</span>
-            <span class="num" id="heatmapLegend">hatch = fuori budget</span>
-          </div>
-          <canvas id="heatmapCanvas"></canvas>
-          <p class="formula-note" id="heatmapNote">Clicca una cella per impostare Skill e Forza. Tinta + tratteggio = HTK atteso vs shambler della zona.</p>
-        </div>
-
         <div class="formula-card" id="formulaCard">
           <div class="formula-head">
             <span>Pipeline danno (Java B42.20)</span>
@@ -591,7 +569,7 @@
     <div class="cut" aria-hidden="true"></div>
 
     <section class="insight-grid legacy-grid" id="legacyMetrics">
-      <h2 class="section-kicker">Indicatori livello selezionato</h2>
+      <h2 class="section-kicker">Livello selezionato</h2>
 
       <div class="insight-card">
         <div class="insight-meta">

@@ -9,13 +9,17 @@ Same Knox AEBS teletype as Armory Lab. Combat Lab does not invent a second world
 - figure-ink `#e4d2a8`, figure-dim `#b49a6c`, figure-median `#e0b03a`, figure-alarm `#f08a78`
 - IBM Plex Mono 400/500/600/700 self-hosted, 14px, −0.03em, tabular nums
 - pressed cue: amber fill + 3px `#b88814` stripe
-- sheets pad `1.1rem 1.25rem`; cut `2.75rem`; max-width 1280px
+- sheets pad `0.85rem 1rem`; cut `1.35rem`; full viewport (no 1280 cap)
 - one motion: 200ms `cubic-bezier(0.16, 1, 0.3, 1)`
 
 ## Surface
 
-Header: `Knox AEBS — sector combat.balance`. View and category cues carry label + pattern. Chart stage and tuning rail are detached thermal sheets. Canvas traces encode channel by marker + dash, not rainbow.
+Header: `Combat.balance`. View and category cues carry label + pattern. Chart stage and tuning rail are detached thermal sheets. Heatmap is its own column, not a 220px strip beside copy.
+
+## Figures
+
+Traces keep dash + marker encoding. Hue is allowed to spread so overlapping skill/weapon series stay separable on the dark ground: teal, steel, paper, gold, copper, salmon, alarm, lilac, lime, amber, sky. Heatmap cells use the same inks plus hatch for fail states.
 
 ## Refuse
 
-Kickers as eyebrows, KPI-hero cards, rounded pills, shadows, a second typeface, color-only legends, compressing charts below print width.
+Kickers as eyebrows, KPI-hero cards, rounded pills, shadows, a second typeface, compressing charts below print width, rainbow SaaS palettes that ignore the Knox ground.

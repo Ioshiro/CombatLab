@@ -11,7 +11,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const FONT_SM = "10px 'IBM Plex Mono', ui-monospace, monospace";
   const TRACE_MARKS = ["circle", "square", "triangle", "diamond"];
   const TRACE_DASHES = [[], [6, 4], [2, 3], [10, 3, 2, 3], [4, 4], [8, 2, 2, 2], [1, 3]];
-  const TRACE_INKS = [INK.figure, INK.median, INK.figureAlarm, INK.sage, INK.figureDim, INK.amber, INK.ink];
+  const TRACE_INKS = [
+    "#7ec8c4", "#7aa2e8", "#e4d2a8", "#e0b03a", "#d67a32",
+    "#f08a78", "#c45c4a", "#c9a0dc", "#8ec07c", "#d6a11a", "#6ec4e8"
+  ];
+  const CHAN = {
+    body: "#e4d2a8", head: "#7aa2e8", floor: "#f08a78",
+    exerted: "#d6a11a", exhausted: "#8a9378", zombie: "#c45c4a", ref: "#c9a0dc"
+  };
   function fillMarker(ctx, x, y, kind, r) {
     ctx.beginPath();
     if (kind === "square") ctx.rect(x - r, y - r, r * 2, r * 2);
@@ -297,8 +304,8 @@ document.addEventListener("DOMContentLoaded", () => {
     el.formulaSteps.innerHTML = steps.map(([k, v]) => `<li><span>${k}</span><span class="num">${v}</span></li>`).join("");
     el.formulaResult.textContent = `${lvlData.damage.freshBody.toFixed(2)} HP`;
     el.formulaNote.textContent = b.isStomp
-      ? "IsoGameCharacter.Hit applica il 5x solo se aimAtFloor && !isDoShove. Lo stomp non lo riceve."
-      : `Crit ${lvlData.damage.critChance.toFixed(0)}% ×${CombatEngine.getCritMultiplier(weapon)}. A terra e crit si sommano.`;
+      ? "Stomp: niente 5× terra (aimAtFloor && !isDoShove)."
+      : `Crit ${lvlData.damage.critChance.toFixed(0)}% ×${CombatEngine.getCritMultiplier(weapon)}. Terra e crit si sommano.`;
   }
 
   // --- RECALCULATE & RENDER ---
@@ -363,7 +370,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (el.sliderMaintenance) el.sliderMaintenance.value = state.character.maintenanceLevel;
 
     const stamina = activeLvlData.endurance.costPerSwing;
-    document.getElementById("fitnessNote").textContent = `Forma fisica ${state.character.fitnessLevel}: ${formatZone(stamina * 100)}% fiato / colpo. ${stamina > 0 ? `~${Math.floor(0.25 / stamina)} colpi prima del fiatone, senza recupero.` : "Nessun consumo di mischia."} Non modifica il danno a fatica costante; confrontala con “Fiato / eliminazione”.`;
+    document.getElementById("fitnessNote").textContent = `Fitness ${state.character.fitnessLevel}: ${formatZone(stamina * 100)}% fiato/colpo.`;
     el.tacStaminaCost.textContent = stamina.toFixed(4);
     el.tacSwingsToExertion.textContent = stamina <= 0 ? "∞" : `~${activeLvlData.endurance.swingsToExertion} colpi`;
     el.tacTTK.textContent = `~${activeLvlData.ttkSeconds} sec`;
@@ -372,11 +379,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let tacticDesc = "";
     if (weapon.category === "Unarmed") {
-      tacticDesc = "Lo stomp sostituisce il danno arma (roll 0.7–1.0 + Forza×0.2 × stompPower). Non riceve il 5x dei colpi a terra. Il 15x 'combo testa a terra' non si applica allo stomp.";
+      tacticDesc = "Stomp: roll scarpe + Forza, senza 5× terra né combo 15×.";
     } else if (activeLvlData.htk.floorBody === 1) {
-      tacticDesc = `A terra ${weapon.name} fa ×${activeLvlData.floorMultiplier} (max del minimo vanilla 5 e critMult ${weapon.critMultiplier}). In piedi servono ${activeLvlData.htk.body} colpi; con crit l'atteso è ${activeLvlData.htk.expectedBody}.`;
+      tacticDesc = `Terra ×${activeLvlData.floorMultiplier} one-shot · in piedi ${activeLvlData.htk.body} colpi (atteso ${activeLvlData.htk.expectedBody} con crit).`;
     } else {
-      tacticDesc = `In piedi: ${activeLvlData.htk.body} colpi al corpo (atteso ${activeLvlData.htk.expectedBody} con crit ${activeLvlData.damage.critChance.toFixed(0)}%). Testa: ${activeLvlData.htk.head}. Autonomia ~${activeLvlData.endurance.swingsToExertion} swing prima del fiatone.`;
+      tacticDesc = `Corpo ${activeLvlData.htk.body} · testa ${activeLvlData.htk.head} · ~${activeLvlData.endurance.swingsToExertion} swing al fiatone.`;
     }
     el.tacSummaryText.textContent = tacticDesc;
 
@@ -411,7 +418,7 @@ document.addEventListener("DOMContentLoaded", () => {
     el.leverGrid.style.display = hideVanillaLevers ? "none" : "grid";
     el.btnResetVanilla.style.display = hideVanillaLevers ? "none" : "inline-block";
     if (el.tzonyneLevers) el.tzonyneLevers.style.display = state.viewMode === "zones" ? "flex" : "none";
-    if (el.heatmapCard) el.heatmapCard.style.display = state.viewMode === "zones" && state.tzonyne.enabled ? "flex" : "none";
+    if (el.heatmapCard) el.heatmapCard.hidden = !(state.viewMode === "zones" && state.tzonyne.enabled);
     syncTzonyneRibbon();
     document.getElementById("zoneControls").hidden = state.viewMode !== "zones";
     document.getElementById("zoneChartNote").hidden = state.viewMode !== "zones";
@@ -421,54 +428,60 @@ document.addEventListener("DOMContentLoaded", () => {
     if (state.viewMode !== "single") el.chartTooltip.style.display = "none";
     // Update Stage & Table depending on View Mode
     if (state.viewMode === "single") {
-      el.stageLegend.innerHTML = `<span class="legend-item">Corpo · azzurro</span><span class="legend-item">Testa · verde</span><span class="legend-item" id="legendFloorText"></span><span class="legend-item">Fatica · giallo tratteggiato</span><span class="legend-item" id="legendZombieHP"></span>`;
+      el.stageLegend.innerHTML = `
+        <div class="legend-item"><div class="legend-swatch" style="background:${CHAN.body};border-color:${CHAN.body}"></div><span>Corpo</span></div>
+        <div class="legend-item"><div class="legend-swatch" style="background:${CHAN.head};border-color:${CHAN.head}"></div><span>Testa ×${state.config.HEAD_HIT_DAMAGE_SPLIT_MODIFIER.toFixed(1)}</span></div>
+        <div class="legend-item"><div class="legend-swatch" style="background:${CHAN.floor};border-color:${CHAN.floor}"></div><span id="legendFloorText">Terra ×${activeLvlData.floorMultiplier}</span></div>
+        <div class="legend-item"><div class="legend-swatch" style="background:${CHAN.exerted};border-color:${CHAN.exerted}"></div><span>Fatica −50%</span></div>
+        <div class="legend-item"><div class="legend-swatch" style="background:${CHAN.exhausted};border-color:${CHAN.exhausted}"></div><span>Esausto −95%</span></div>
+        <div class="legend-item"><div class="legend-swatch pat-zombie"></div><span id="legendZombieHP">HP ${zombieHP.mean.toFixed(2)}</span></div>`;
       el.legendFloorText = document.getElementById("legendFloorText");
       el.legendZombieHP = document.getElementById("legendZombieHP");
       renderSingleWeaponCanvas(progression);
       renderSingleWeaponTable(progression);
-      el.stageTitle.textContent = `Analisi Singola: ${weapon.name} [${weapon.category}]`;
-      el.stageSubtitle.textContent = `Corpo, testa ×${state.config.HEAD_HIT_DAMAGE_SPLIT_MODIFIER.toFixed(1)}, a terra ×${activeLvlData.floorMultiplier} (max del minimo e critMult), fatica. Multi-hit ${state.sandbox.multiHit ? "ON" : "OFF"}.`;
-      el.panelTableTitle.textContent = `Matrice Dettagliata per Livello: ${weapon.name}`;
-      el.panelTableSub.textContent = `Clicca su una riga per analizzare quel livello specifico (Attualmente Lv ${state.selectedSkillLevel})`;
+      el.stageTitle.textContent = `${weapon.name} · ${weapon.category}`;
+      el.stageSubtitle.textContent = `Multi-hit ${state.sandbox.multiHit ? "ON" : "OFF"} · Lv ${state.selectedSkillLevel}`;
+      el.panelTableTitle.textContent = "Matrice livello";
+      el.panelTableSub.textContent = `Lv ${state.selectedSkillLevel}`;
     } else if (state.viewMode === "multi") {
       renderMultiWeaponCanvas();
       renderMultiWeaponTable();
-      el.stageTitle.textContent = "Confronto Diretto: Le 7 Armi Principali di Project Zomboid";
-      el.stageSubtitle.textContent = "Curve di danno a confronto sullo stesso grafico per valutare differenze di classe e scalabilità";
-      el.panelTableTitle.textContent = "Classifica e Matrice Comparativa Armi";
-      el.panelTableSub.textContent = "Confronto rapido di efficienza, colpi per uccidere e longevità";
+      el.stageTitle.textContent = "Confronto armi";
+      el.stageSubtitle.textContent = "Stesso grafico, classi diverse";
+      el.panelTableTitle.textContent = "Classifica";
+      el.panelTableSub.textContent = "HTK e longevità";
     } else if (state.viewMode === "diff") {
       renderDiffCanvas(weapon);
       renderDiffTable(weapon);
-      el.stageTitle.textContent = `Parametri Java originali vs modificati · ${weapon.name}`;
-      el.stageSubtitle.textContent = "Continue = Java originale; tratteggiate = leve attive. Stesso personaggio, HP e moltiplicatori TZonyne su entrambi: non è un confronto con un mondo vanilla.";
-      el.panelTableTitle.textContent = "Confronto Numerico Delta: Vanilla vs Ribilanciato";
-      el.panelTableSub.textContent = "Variazione percentuale esatta calcolata in tempo reale";
+      el.stageTitle.textContent = `Java vs leve · ${weapon.name}`;
+      el.stageSubtitle.textContent = "Continue = originale · tratteggiate = attive";
+      el.panelTableTitle.textContent = "Delta";
+      el.panelTableSub.textContent = "% in tempo reale";
     } else if (state.viewMode === "horde") {
       renderHordeCanvas(weapon);
       renderHordeTable(weapon);
-      el.stageTitle.textContent = `Simulatore Scontro Orda: ${weapon.name} vs ${state.hordeSize} Zombie`;
-      el.stageSubtitle.textContent = `Dinamica della Death Spiral di Stamina: vedi come il danno crolla all'accumularsi della fatica`;
-      el.panelTableTitle.textContent = `Log Scontro Round-by-Round (${state.hordeSize} Zombie)`;
-      el.panelTableSub.textContent = `Tracciamento di stamina consumata, colpi necessari e stato di fatica`;
+      el.stageTitle.textContent = `${weapon.name} vs ${state.hordeSize} zed`;
+      el.stageSubtitle.textContent = "Fiato residuo e spirale di fatica";
+      el.panelTableTitle.textContent = "Log round";
+      el.panelTableSub.textContent = `${state.hordeSize} zombie`;
     } else if (state.viewMode === "radar") {
       renderRadarCanvas(weapon);
       renderKnockdownCard(weapon);
-      el.stageTitle.textContent = `Radar Multidimensionale & Stun-Lock: ${weapon.name}`;
-      el.stageSubtitle.textContent = `Confronto a 6 assi (Letalità, Longevità, Fiato, Portata, CC, Velocità) & Probabilità Atterramento Java`;
-      el.panelTableTitle.textContent = `Anatomia dello Stun-Lock: La Catena dello Stomp`;
-      el.panelTableSub.textContent = "Spinte successive: roll ripetuto, non atterramento garantito. Tempi e punteggi radar sono stime.";
+      el.stageTitle.textContent = `Radar · ${weapon.name}`;
+      el.stageSubtitle.textContent = "6 assi + atterramento (stime)";
+      el.panelTableTitle.textContent = "Stun-lock";
+      el.panelTableSub.textContent = "Roll ripetuto, non garantito";
     } else if (state.viewMode === "zones") {
       renderZoneCanvas();
       renderZoneTable();
       renderHeatmap(weapon);
       const cur = zonePoint(state.selectedSkillLevel, currentTier());
-      el.stageTitle.textContent = `${weapon.name} · progressione per tier`;
-      el.stageSubtitle.textContent = `Curve per abilità · Forza ${state.character.strength} · Forma fisica ${state.character.fitnessLevel}. Seleziona un livello dalla legenda.`;
-      el.panelTableTitle.textContent = "Matrice livelli × tier";
-      el.panelTableSub.textContent = "Stessa metrica del grafico. Seleziona una cella per fissare livello e tier; le leve modificano solo il tier selezionato.";
-      el.panelRightTitle.textContent = `Bilanciamento · T${currentTier().id}`;
-      el.panelRightSub.textContent = "Modifica le leve e confronta le curve in tempo reale.";
+      el.stageTitle.textContent = `${weapon.name} · tier`;
+      el.stageSubtitle.textContent = `Forza ${state.character.strength} · Fitness ${state.character.fitnessLevel} · Lv ${state.selectedSkillLevel}`;
+      el.panelTableTitle.textContent = "Livelli × tier";
+      el.panelTableSub.textContent = "Clicca una cella";
+      el.panelRightTitle.textContent = `Leve · T${currentTier().id}`;
+      el.panelRightSub.textContent = "Danno/crit/sprinter sul tier; HP e budget globali.";
       document.getElementById("tierLeverHeading").textContent = `Moltiplicatori T${currentTier().id}`;
       el.lblTacMetric1.textContent = "Colpi al bersaglio";
       el.tacStaminaCost.textContent = formatZone(cur.htk);
@@ -567,7 +580,7 @@ document.addEventListener("DOMContentLoaded", () => {
     ctx.fillStyle = INK.alarm;
     ctx.textAlign = "left";
     ctx.font = FONT_BOLD;
-    ctx.fillText(`Zombie HP (${zHP.toFixed(2)}) — Zona 1-Hit Kill`, pad.left + 8, zY - 6);
+    ctx.fillText(`HP ${zHP.toFixed(2)} · 1-hit`, pad.left + 8, zY - 6);
     ctx.restore();
 
     // Min-Max Area Band for Fresh Body Damage
@@ -608,11 +621,11 @@ document.addEventListener("DOMContentLoaded", () => {
       ctx.restore();
     };
 
-    drawTrace(floorSeries, INK.figureAlarm, 2.4, [], "triangle");
-    drawTrace(progression.levels.map(l => l.damage.head), INK.median, 2.2, [5, 3], "square");
-    drawTrace(progression.levels.map(l => l.damage.freshBody), INK.figure, 2.6, [], "circle");
-    drawTrace(progression.levels.map(l => l.damage.exerted), INK.sage, 1.8, [4, 4], "circle");
-    drawTrace(progression.levels.map(l => l.damage.exhausted), INK.ghost, 1.5, [1, 3], "diamond");
+    drawTrace(floorSeries, CHAN.floor, 2.4, [], "triangle");
+    drawTrace(progression.levels.map(l => l.damage.head), CHAN.head, 2.2, [5, 3], "square");
+    drawTrace(progression.levels.map(l => l.damage.freshBody), CHAN.body, 2.6, [], "circle");
+    drawTrace(progression.levels.map(l => l.damage.exerted), CHAN.exerted, 1.8, [4, 4], "circle");
+    drawTrace(progression.levels.map(l => l.damage.exhausted), CHAN.exhausted, 1.5, [1, 3], "diamond");
 
     // Crossing Annotations
     const floorCrossLvl = floorSeries.findIndex(v => v >= zHP);
@@ -933,14 +946,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Exertion Level Tag Labels on right
     ctx.textAlign = "left";
-    ctx.fillStyle = INK.median;
-    ctx.fillText("Fresco (100%)", pad.left + chartW + 8, y100 + 12);
-    ctx.fillStyle = INK.sage;
-    ctx.fillText("Fiatone (-50%)", pad.left + chartW + 8, y75 + 12);
-    ctx.fillStyle = INK.figureAlarm;
-    ctx.fillText("Fatica (-80%)", pad.left + chartW + 8, y50 + 12);
-    ctx.fillStyle = INK.alarm;
-    ctx.fillText("Sfinimento (-95%)", pad.left + chartW + 8, y25 + 12);
+    // Band labels live in the stage legend; keep the plot full-width.
 
     // X Axis: Zombie count
     ctx.textAlign = "center";
@@ -1447,14 +1453,14 @@ document.addEventListener("DOMContentLoaded", () => {
     canvas.width = width * dpr;
     canvas.height = height * dpr;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const pad = { top: 38, right: 22, bottom: 62, left: width < 500 ? 46 : 64 };
+    const pad = { top: 28, right: 16, bottom: 48, left: width < 500 ? 40 : 48 };
     const chartW = width - pad.left - pad.right;
     const chartH = height - pad.top - pad.bottom;
     const tiers = state.tzonyne.tiers;
     const levels = [...new Set([...state.zoneLevels, state.selectedSkillLevel])].sort((a,b) => a-b);
     const series = levels.map(level => ({
       level,
-      color: level === state.selectedSkillLevel ? INK.amber : INK.figureDim,
+      color: TRACE_INKS[level % TRACE_INKS.length],
       dash: TRACE_DASHES[level % TRACE_DASHES.length],
       mark: TRACE_MARKS[level % TRACE_MARKS.length],
       points: tiers.map(t => zonePoint(level, t)),
@@ -1526,7 +1532,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (s.baseline.length) draw(s.baseline,true);
       draw(s.points,false);
     });
-    el.stageLegend.innerHTML = series.map(s => `<button type="button" class="zone-trace" data-zone-level="${s.level}" aria-pressed="${s.level === state.selectedSkillLevel}" style="--trace-angle:${30 + s.level * 12}deg">Lv ${s.level}</button>`).join("");
+    el.stageLegend.innerHTML = series.map(s => `<button type="button" class="zone-trace" data-zone-level="${s.level}" aria-pressed="${s.level === state.selectedSkillLevel}" style="--trace-color:${s.color}; --trace-angle:${30 + s.level * 12}deg">Lv ${s.level}</button>`).join("");
     el.stageLegend.querySelectorAll("[data-zone-level]").forEach(button => button.onclick = () => {
       state.selectedSkillLevel = Number(button.dataset.zoneLevel); update();
     });
@@ -1544,14 +1550,20 @@ document.addEventListener("DOMContentLoaded", () => {
         ` · Danno vs T${tiers[selectedIndex - 1].id}: ${change > 0 ? "+" : ""}${formatZone(change)}%` +
         ` · Sprinter ${formatZone(previous.sprinterPct)}% → ${formatZone(current.sprinterPct)}%`;
     }
+    const extras = [
+      getActiveWeapon().isRanged ? "Firearms: hit/aim/reload esclusi." : "",
+      getActiveWeapon().category === "Unarmed" ? "Stomp: già a terra." : "",
+      !state.tzonyne.enabled ? "TZonyne off: scenario unico." : "",
+      state.zoneTarget === "sprinter" && current.sprinterPct === 0 ? "Nessuno sprinter in questo tier." : ""
+    ].filter(Boolean).join(" ");
     const note = state.zoneMetric === "stamina"
-      ? "Fiato per eliminazione = colpi calcolati × costo base per colpo. Forma fisica riduce il costo, non il danno diretto. Stima senza recupero, sconti sul danno finale o fatica accumulata durante la singola eliminazione."
+      ? "Fiato = colpi × costo. Fitness sul costo, non sul danno."
       : state.zoneMetric === "damage"
-      ? "Linea tratteggiata = HP bersaglio. Il danno medio con critici sopra la linea NON garantisce un one-shot."
+      ? "Tratteggio = HP. Sopra la linea ≠ one-shot."
       : state.zoneMetric === "power"
-        ? "100% = target colpi rispettato; 150% = efficienza 1,5× il target. Non misura il rischio della zona."
-        : `Linea tratteggiata = budget di ${state.tzonyne.survivalHtk} colpi. Roll medio fisso, critici probabilistici; oltre 1000 colpi non critici si usa la stima HP / danno medio.`;
-    document.getElementById("zoneChartNote").textContent = `${note} Percentuali sotto i tier = sprinter effettivi, non difficoltà media. ${state.zoneCompare ? "Curve tratteggiate colorate = riferimento fissato; stessa arma e stesso personaggio." : "Clicca un tier nel grafico o una cella della matrice per ispezionarlo."} ${!state.tzonyne.enabled ? "TZonyne disattivato: tutti i tier usano lo stesso scenario vanilla." : ""} ${getActiveWeapon().isRanged ? "Arma da fuoco: colpi a segno, precisione e ricarica escluse. TZonyne modifica il bonus mira, non il danno base." : ""} ${getActiveWeapon().category === "Unarmed" ? "Stomp: bersaglio già a terra, moltiplicatori arma del tier esclusi." : ""} ${state.zoneTarget === "sprinter" && current.sprinterPct === 0 ? "Nel tier selezionato non sono presenti sprinter: confronto ipotetico." : ""}`;
+        ? "100% = target colpi."
+        : `Tratteggio = budget ${state.tzonyne.survivalHtk} colpi.`;
+    document.getElementById("zoneChartNote").textContent = `${note} % sotto i tier = sprinter. ${extras}`.trim();
   }
 
   function renderZoneTable() {
@@ -1586,18 +1598,18 @@ document.addEventListener("DOMContentLoaded", () => {
     ctx.clearRect(0, 0, width, height);
 
     const data = CombatEngine.buildZoneHeatmap(weapon, state.sandbox, state.config, { ...state.tzonyne, enabled: true });
-    const pad = { top: 18, right: 10, bottom: 22, left: 28 };
+    const pad = { top: 8, right: 8, bottom: 18, left: 18 };
     const cellW = (width - pad.left - pad.right) / 11;
     const cellH = (height - pad.top - pad.bottom) / 11;
     heatmapHit = { pad, cellW, cellH, width, height };
 
     const colorFor = (cell) => {
-      if (data.mix.sprinterShare > 0 && cell.sprHtk > 1) return INK.alarm;
-      if (cell.htk <= 1.05) return INK.amber;
-      if (cell.ok && cell.htk <= state.tzonyne.comfortHtk) return INK.sage;
-      if (cell.ok) return INK.median;
-      if (cell.htk <= state.tzonyne.survivalHtk + 1) return INK.figureAlarm;
-      return INK.alarm;
+      if (data.mix.sprinterShare > 0 && cell.sprHtk > 1) return "#c45c4a";
+      if (cell.htk <= 1.05) return "#e0b03a";
+      if (cell.ok && cell.htk <= state.tzonyne.comfortHtk) return "#8ec07c";
+      if (cell.ok) return "#7aa2e8";
+      if (cell.htk <= state.tzonyne.survivalHtk + 1) return "#d67a32";
+      return "#c45c4a";
     };
 
     data.cells.forEach(cell => {
@@ -1617,16 +1629,17 @@ document.addEventListener("DOMContentLoaded", () => {
     ctx.fillStyle = INK.dim;
     ctx.font = FONT_SM;
     ctx.textAlign = "center";
-    for (let s = 0; s <= 10; s++) {
-      ctx.fillText(String(s), pad.left + s * cellW + cellW / 2, height - 6);
-      ctx.fillText(String(s), 12, pad.top + (10 - s) * cellH + cellH / 2 + 3);
+    for (const s of [0, 5, 10]) {
+      ctx.fillText(String(s), pad.left + s * cellW + cellW / 2, height - 5);
+      ctx.textAlign = "right";
+      ctx.fillText(String(s), pad.left - 4, pad.top + (10 - s) * cellH + cellH / 2 + 3);
+      ctx.textAlign = "center";
     }
-    ctx.fillText("Skill →", width / 2, 12);
-    el.heatmapLegend.textContent = `T${data.tier.id} · target ${data.target} · shambler ${data.mix.shamblerHP} HP`;
+    el.heatmapLegend.textContent = `T${data.tier.id} · target ${data.target} · shambler ${data.mix.shamblerHP} HP · Skill → · ↑ Forza`;
     const cur = data.cells.find(c => c.skill === state.selectedSkillLevel && c.str === state.character.strength);
     el.heatmapNote.textContent = cur
-      ? `Corpo fresco, shambler, con critici (indipendente dai selettori del grafico). Skill ${cur.skill} × Forza ${cur.str}: ${cur.htk} colpi. ${cur.ok ? "Entro budget" : "Fuori budget o sprinter non chiuso in un colpo medio"}. Tinta + tratteggio: hatch = fuori budget o sprinter non chiuso; ambra piena = circa 1 colpo. Clicca una cella per impostare il personaggio.`
-      : "Corpo fresco contro shambler. Clicca una cella per impostare Skill e Forza.";
+      ? `Shambler fresco · Skill ${cur.skill} × Forza ${cur.str}: ${cur.htk} colpi · ${cur.ok ? "entro budget" : "fuori budget"}. Hatch = fuori o sprinter aperto. Clicca per impostare.`
+      : "Shambler fresco. Clicca una cella: Skill e Forza.";
   }
 
   function heatmapCellFromEvent(e) {
