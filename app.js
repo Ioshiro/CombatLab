@@ -53,7 +53,6 @@ document.addEventListener("DOMContentLoaded", () => {
     zoneFatigue: 0,
     zoneCompare: false,
     zoneLog: false,
-    zoneLevels: new Set([0, 3, 5, 7, 10]),
     hordeSize: 15,
     hordeTactic: "standing", // "standing" | "shove_stomp" | "headshot"
     sandbox: {
@@ -477,7 +476,7 @@ document.addEventListener("DOMContentLoaded", () => {
       renderHeatmap(weapon);
       const cur = zonePoint(state.selectedSkillLevel, currentTier());
       el.stageTitle.textContent = `${weapon.name} · tier`;
-      el.stageSubtitle.textContent = `Forza ${state.character.strength} · Fitness ${state.character.fitnessLevel} · Lv ${state.selectedSkillLevel}`;
+      el.stageSubtitle.textContent = `A${state.selectedSkillLevel} F${state.character.strength} · obiettivi T1–T6`;
       el.panelTableTitle.textContent = "Livelli × tier";
       el.panelTableSub.textContent = "Clicca una cella";
       el.panelRightTitle.textContent = `Leve · T${currentTier().id}`;
@@ -1411,12 +1410,32 @@ document.addEventListener("DOMContentLoaded", () => {
     return Number.isFinite(value) ? value.toLocaleString("it-IT", { maximumFractionDigits: 2 }) : "∞";
   }
 
-  function zonePoint(skill, tier, baseline = false) {
+  function zoneBuilds() {
+    const builds = rpg.goals.map((goal, index) => ({
+      skill: goal.skill,
+      strength: goal.strength,
+      label: `A${goal.skill} F${goal.strength}`,
+      title: `Ingresso T${index + 1}: abilità ${goal.skill}, forza ${goal.strength}`
+    }));
+    const matched = builds.some(b => b.skill === state.selectedSkillLevel && b.strength === state.character.strength);
+    if (!matched) {
+      builds.push({
+        skill: state.selectedSkillLevel,
+        strength: state.character.strength,
+        label: `A${state.selectedSkillLevel} F${state.character.strength}`,
+        title: "Build dei selettori, non un obiettivo di tier",
+        custom: true
+      });
+    }
+    return builds;
+  }
+
+  function zonePoint(skill, tier, baseline = false, strength = state.character.strength) {
     const source = baseline ? zoneBaseline : state;
     const tz = { ...source.tzonyne, selectedTier: tier.id };
-    const key = `${skill}:${tier.id}:${baseline}`;
+    const key = `${skill}:${strength}:${tier.id}:${baseline}`;
     if (zonePoints.has(key)) return zonePoints.get(key);
-    const character = { ...state.character, skillLevel: skill, moodles: { endurance: state.zoneFatigue } };
+    const character = { ...state.character, skillLevel: skill, strength, moodles: { endurance: state.zoneFatigue } };
     const weapon = CombatEngine.applyTZonyneWeapon(getActiveWeapon(), tz, character);
     const mix = CombatEngine.zoneZombieMix(tz);
     const hp = tz.enabled
@@ -1457,14 +1476,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const chartW = width - pad.left - pad.right;
     const chartH = height - pad.top - pad.bottom;
     const tiers = state.tzonyne.tiers;
-    const levels = [...new Set([...state.zoneLevels, state.selectedSkillLevel])].sort((a,b) => a-b);
-    const series = levels.map(level => ({
-      level,
-      color: TRACE_INKS[level % TRACE_INKS.length],
-      dash: TRACE_DASHES[level % TRACE_DASHES.length],
-      mark: TRACE_MARKS[level % TRACE_MARKS.length],
-      points: tiers.map(t => zonePoint(level, t)),
-      baseline: state.zoneCompare ? tiers.map(t => zonePoint(level, t, true)) : []
+    const builds = zoneBuilds();
+    const series = builds.map((build, index) => ({
+      ...build,
+      color: TRACE_INKS[index % TRACE_INKS.length],
+      dash: TRACE_DASHES[index % TRACE_DASHES.length],
+      mark: TRACE_MARKS[index % TRACE_MARKS.length],
+      points: tiers.map(t => zonePoint(build.skill, t, false, build.strength)),
+      baseline: state.zoneCompare ? tiers.map(t => zonePoint(build.skill, t, true, build.strength)) : []
     }));
     const threshold = state.zoneMetric === "stamina" ? 0 : state.zoneMetric === "htk" ? state.tzonyne.survivalHtk : state.zoneMetric === "power" ? 100 : series[0].points[0].hp;
     const values = series.flatMap(s => [...s.points, ...s.baseline].map(p => p[state.zoneMetric])).filter(Number.isFinite);
@@ -1514,7 +1533,7 @@ document.addEventListener("DOMContentLoaded", () => {
       ctx.fillText(`${formatZone(share)}%`,x(i),height-17);
     });
     series.forEach(s => {
-      const selected = s.level === state.selectedSkillLevel;
+      const selected = s.skill === state.selectedSkillLevel && s.strength === state.character.strength;
       const draw = (points, reference) => {
         ctx.save(); ctx.strokeStyle = s.color; ctx.fillStyle = s.color;
         ctx.lineWidth = selected ? 2.6 : 1.5;
@@ -1532,15 +1551,17 @@ document.addEventListener("DOMContentLoaded", () => {
       if (s.baseline.length) draw(s.baseline,true);
       draw(s.points,false);
     });
-    el.stageLegend.innerHTML = series.map(s => `<button type="button" class="zone-trace" data-zone-level="${s.level}" aria-pressed="${s.level === state.selectedSkillLevel}" style="--trace-color:${s.color}; --trace-angle:${30 + s.level * 12}deg">Lv ${s.level}</button>`).join("");
-    el.stageLegend.querySelectorAll("[data-zone-level]").forEach(button => button.onclick = () => {
-      state.selectedSkillLevel = Number(button.dataset.zoneLevel); update();
+    el.stageLegend.innerHTML = series.map(s => `<button type="button" class="zone-trace" data-zone-skill="${s.skill}" data-zone-strength="${s.strength}" aria-pressed="${s.skill === state.selectedSkillLevel && s.strength === state.character.strength}" title="${s.title}" style="--trace-color:${s.color}; --trace-angle:${30 + (s.custom ? 90 : s.skill * 12)}deg">${s.label}</button>`).join("");
+    el.stageLegend.querySelectorAll(".zone-trace").forEach(button => button.onclick = () => {
+      state.selectedSkillLevel = Number(button.dataset.zoneSkill);
+      state.character.strength = Number(button.dataset.zoneStrength);
+      update();
     });
     const current = zonePoint(state.selectedSkillLevel, currentTier());
     const before = zonePoint(state.selectedSkillLevel, currentTier(), true);
     const delta = current[state.zoneMetric] - before[state.zoneMetric];
     document.getElementById("zoneSelection").textContent =
-      `T${currentTier().id} · Lv ${state.selectedSkillLevel} · ${formatZone(current[state.zoneMetric])} ${zoneUnit()}` +
+      `T${currentTier().id} · A${state.selectedSkillLevel} F${state.character.strength} · ${formatZone(current[state.zoneMetric])} ${zoneUnit()}` +
       ` · Roll non critico ${formatZone(current.min)}–${formatZone(current.max)} HP · Crit ${formatZone(current.critChance)}%` +
       (state.zoneCompare ? ` · Δ riferimento ${delta > 0 ? "+" : ""}${formatZone(delta)} ${zoneUnit()}` : "");
     if (selectedIndex > 0) {
@@ -1563,7 +1584,7 @@ document.addEventListener("DOMContentLoaded", () => {
       : state.zoneMetric === "power"
         ? "100% = target colpi."
         : `Tratteggio = budget ${state.tzonyne.survivalHtk} colpi.`;
-    document.getElementById("zoneChartNote").textContent = `${note} % sotto i tier = sprinter. ${extras}`.trim();
+    document.getElementById("zoneChartNote").textContent = `${note} Tracce = obiettivi (abilità + forza). % sotto i tier = sprinter. ${extras}`.trim();
   }
 
   function renderZoneTable() {

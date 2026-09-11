@@ -18,7 +18,7 @@ Header: `Combat.balance`. View and category cues carry label + pattern. Chart st
 
 ## Figures
 
-Traces keep dash + marker encoding. Hue is allowed to spread so overlapping skill/weapon series stay separable on the dark ground: teal, steel, paper, gold, copper, salmon, alarm, lilac, lime, amber, sky. Heatmap cells use the same inks plus hatch for fail states.
+Traces keep dash + marker encoding. Hue is allowed to spread so overlapping tier-build series (weapon skill + strength) stay separable on the dark ground: teal, steel, paper, gold, copper, salmon, alarm, lilac, lime, amber, sky. Heatmap cells use the same inks plus hatch for fail states.
 
 ## Refuse
 
